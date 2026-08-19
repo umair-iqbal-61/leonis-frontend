@@ -19,6 +19,7 @@ export default function PetList() {
         setLoading(false)
       } catch (error) {
         setError(error.message)
+        setLoading(false)
       }
     }
     fetchPets()

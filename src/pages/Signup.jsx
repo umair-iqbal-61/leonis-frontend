@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { apiFetch } from '../lib/api'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 
-export default function Signup() {
+export default function Signup({ setSession }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
 
   const handleSignup = async (e) => {
     e.preventDefault()
@@ -23,10 +22,11 @@ export default function Signup() {
       })
 
       localStorage.setItem('token', token)
-      navigate('/dashboard')
+      setSession(token)
       setLoading(false)
     } catch (error) {
       setError(error.message)
+      setLoading(false)
     }
   }
 

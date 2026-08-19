@@ -1,8 +1,7 @@
-import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import DarkModeToggle from '../components/DarkModeToggle'
 
-export default function Dashboard({ children }) {
+export default function Dashboard({ setSession, children }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
       <nav className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4 flex justify-between items-center">
@@ -10,7 +9,10 @@ export default function Dashboard({ children }) {
         <div className="flex items-center gap-3">
           <DarkModeToggle />
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => {
+              localStorage.removeItem('token')
+              setSession(false)
+            }}
             className="text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
             Log out
           </button>
