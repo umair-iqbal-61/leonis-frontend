@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 
 const SPECIES = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'other']
 const GENDERS = ['male', 'female']
@@ -18,17 +18,22 @@ export default function AddPet() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
-    setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('pets').insert({
-      ...form,
-      age: form.age ? parseFloat(form.age) : null,
-      weight: form.weight ? parseFloat(form.weight) : null,
-      user_id: user.id
-    })
-    if (error) { setError(error.message); setLoading(false); return }
-    navigate('/dashboard')
+    try {
+      setLoading(true)
+      await apiFetch('/pets', {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          age: form.age ? parseFloat(form.age) : null,
+          weight: form.weight ? parseFloat(form.weight) : null,
+        })
+      })
+
+      navigate('/dashboard')
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+    }
   }
 
   const inputClass = "border dark:border-gray-700 rounded-xl px-4 py-2 text-sm w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-400"

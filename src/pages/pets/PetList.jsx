@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 import PetCard from '../../components/PetCard'
 
 export default function PetList() {
   const [pets, setPets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const fetchPets = async () => {
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (!error) setPets(data)
-      setLoading(false)
+      try {
+        const pets = await apiFetch('/pets', {
+          method: "GET"
+        })
+        setPets(pets)
+
+        setLoading(false)
+      } catch (error) {
+        setError(error.message)
+      }
     }
     fetchPets()
   }, [])
@@ -29,6 +34,7 @@ export default function PetList() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Pets</h2>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         <Link to="/pets/add"
           className="bg-violet-600 text-white text-sm px-4 py-2 rounded-xl hover:bg-violet-700 transition-colors">
           + Add Pet
