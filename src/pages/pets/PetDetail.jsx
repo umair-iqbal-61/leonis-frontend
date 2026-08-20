@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import MealLog from '../../components/tracking/MealLog'
 import WeightLog from '../../components/tracking/WeightLog'
 import VetVisits from '../../components/tracking/VetVisits'
@@ -11,6 +10,7 @@ import WeightChart from '../../components/tracking/WeightChart'
 import { uploadPetPhoto } from '../../lib/storage'
 import { useRef } from 'react'
 import PhotoGallery from '../../components/tracking/PhotoGallery'
+import { apiFetch } from '../../lib/api'
 
 const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', other: '🐾' }
 const TABS = ['Overview', 'Meals', 'Weight', 'Chart', 'Vet Visits', 'Reminders', 'Photos', 'AI Chat']
@@ -19,7 +19,8 @@ export default function PetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [pet, setPet] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
   const [chatData, setChatData] = useState({ meals: [], weight: [], vets: [] })
   const avatarRef = useRef()
@@ -39,30 +40,35 @@ export default function PetDetail() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const { data, error } = await supabase
-        .from('pets').select('*').eq('id', id).single()
-      if (error) { navigate('/dashboard'); return }
-      setPet(data)
+      try {
+        setLoading(true)
+        const { data } = await apiFetch(`/pets/${id}`, {
+          method: "GET"
+        })
 
-      const [meals, weight, vets] = await Promise.all([
-        supabase.from('meal_logs').select('*').eq('pet_id', id).order('meal_time', { ascending: false }).limit(5),
-        supabase.from('weight_logs').select('*').eq('pet_id', id).order('logged_at', { ascending: false }).limit(3),
-        supabase.from('vet_visits').select('*').eq('pet_id', id).order('visit_date', { ascending: false }).limit(3),
-      ])
-      setChatData({
-        meals: meals.data || [],
-        weight: weight.data || [],
-        vets: vets.data || []
-      })
-      setLoading(false)
+        setPet(data)
+        setLoading(false)
+      } catch (error) {
+        setError(error.message)
+        setLoading(false)
+      }
     }
+
     fetchAll()
   }, [id])
 
   const handleDelete = async () => {
-    if (!confirm(`Delete ${pet.name}? This can't be undone.`)) return
-    await supabase.from('pets').delete().eq('id', id)
-    navigate('/dashboard')
+    try {
+      setLoading(true)
+      await apiFetch(`/pets/${id}`, {
+        method: "DELETE"
+      })
+      navigate('/dashboard')
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   if (loading) return (
@@ -81,12 +87,13 @@ export default function PetDetail() {
         className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-6 flex items-center gap-1 transition-colors">
         ← Back
       </button>
+      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
       {/* Pet header */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 mb-4">
         <div className="flex items-center gap-4">
           <div
-            className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-3xl flex-shrink-0 cursor-pointer relative group overflow-hidden"
+            className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-3xl shrink-0 cursor-pointer relative group overflow-hidden"
             onClick={() => avatarRef.current?.click()}>
             {pet.avatar_url
               ? <img src={pet.avatar_url} className="w-full h-full object-cover" alt={pet.name} />
@@ -104,7 +111,7 @@ export default function PetDetail() {
               {pet.species}{pet.breed ? ` · ${pet.breed}` : ''}
             </p>
           </div>
-          <div className="flex gap-3 sm:gap-4 text-center flex-shrink-0">
+          <div className="flex gap-3 sm:gap-4 text-center shrink-0">
             {pet.age && (
               <div>
                 <p className="text-xs text-gray-400 dark:text-gray-500">Age</p>
@@ -150,7 +157,7 @@ export default function PetDetail() {
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 overflow-x-auto">
         {TABS.map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex-shrink-0 text-xs py-2 px-3 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === tab
+            className={`shrink-0 text-xs py-2 px-3 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === tab
               ? 'bg-white dark:bg-gray-900 text-violet-700 dark:text-violet-400 shadow-sm'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}>

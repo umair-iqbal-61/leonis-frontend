@@ -11,7 +11,7 @@ export default function PetList() {
   useEffect(() => {
     const fetchPets = async () => {
       try {
-        const pets = await apiFetch('/pets', {
+        const { data: pets } = await apiFetch('/pets', {
           method: "GET"
         })
         setPets(pets)

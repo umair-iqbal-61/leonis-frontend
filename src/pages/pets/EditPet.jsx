@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 
 const SPECIES = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'other']
 const GENDERS = ['male', 'female']
@@ -18,38 +18,48 @@ export default function EditPet() {
 
   useEffect(() => {
     const fetchPet = async () => {
-      const { data, error } = await supabase
-        .from('pets').select('*').eq('id', id).single()
-      if (error) { navigate('/dashboard'); return }
-      setForm({
-        name: data.name || '',
-        species: data.species || 'dog',
-        breed: data.breed || '',
-        age: data.age || '',
-        weight: data.weight || '',
-        gender: data.gender || 'male',
-        notes: data.notes || ''
-      })
-      setLoading(false)
+      try {
+        const { data } = await apiFetch(`/pets/${id}`, { method: 'GET' })
+        setForm({
+          name: data.name || '',
+          species: data.species || 'dog',
+          breed: data.breed || '',
+          age: data.age || '',
+          weight: data.weight || '',
+          gender: data.gender || 'male',
+          notes: data.notes || ''
+        })
+        setLoading(false)
+      } catch (error) {
+        setError(error.message)
+        navigate('/dashboard')
+        setLoading(false)
+      }
     }
     fetchPet()
-  }, [id])
+  }, [id, navigate])
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSaving(true)
-    setError('')
 
-    const { error } = await supabase.from('pets').update({
-      ...form,
-      age: form.age ? parseFloat(form.age) : null,
-      weight: form.weight ? parseFloat(form.weight) : null,
-    }).eq('id', id)
+    try {
+      setSaving(true)
+      await apiFetch(`/pets/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          ...form,
+          age: form.age ? parseFloat(form.age) : null,
+          weight: form.weight ? parseFloat(form.weight) : null,
+        })
+      })
 
-    if (error) { setError(error.message); setSaving(false); return }
-    navigate(`/pets/${id}`)
+      navigate(`/pets/${id}`)
+    } catch (error) {
+      setError(error.message)
+      setSaving(false)
+    }
   }
 
   const inputClass = "border dark:border-gray-700 rounded-xl px-4 py-2 text-sm w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-400"
