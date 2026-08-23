@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api.js'
 
 const DAYS_MAP = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 }
 
@@ -20,19 +20,17 @@ export function useReminders() {
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     const currentDay = Object.keys(DAYS_MAP)[now.getDay()]
 
-    const { data: reminders } = await supabase
-      .from('reminders')
-      .select('*, pets(name)')
-      .eq('is_active', true)
+    const { data: allReminders } = await apiFetch('/reminders', { method: "GET" })
 
-    if (!reminders) return
+    if (!allReminders) return
 
-    reminders.forEach(r => {
-      const reminderTime = r.remind_at.slice(0, 5) // 'HH:MM'
+    allReminders.forEach(r => {
+      const remindDate = new Date(r.remindAt)
+      const reminderTime = `${String(remindDate.getHours()).padStart(2, '0')}:${String(remindDate.getMinutes()).padStart(2, '0')}`
       const isToday = r.days.includes('daily') || r.days.includes(currentDay)
       if (reminderTime === currentTime && isToday) {
-        new Notification(`🐾 ${r.pets?.name} — ${r.title}`, {
-          body: `Time for: ${r.reminder_type}`,
+        new Notification(`🐾 ${r.pet?.name} — ${r.title}`, {
+          body: `Time for: ${r.type}`,
           icon: '/favicon.ico'
         })
       }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 
 const TYPES = ['feeding', 'medication', 'vet', 'grooming', 'other']
 const ALL_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
@@ -12,17 +12,20 @@ export default function Reminders({ petId }) {
   const [adding, setAdding] = useState(false)
   const [notifStatus, setNotifStatus] = useState(Notification?.permission || 'default')
   const [form, setForm] = useState({
-    title: '', reminder_type: 'feeding', remind_at: '08:00', days: ['daily']
+    title: '', type: 'feeding', remindAt: '08:00', days: ['daily'], isActive: true
   })
+  const [error, setError] = useState()
 
   const fetchReminders = async () => {
-    const { data } = await supabase
-      .from('reminders')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('remind_at')
-    setReminders(data || [])
-    setLoading(false)
+    try {
+      const { data } = await apiFetch(`/pets/${petId}/reminders`, { method: "GET" })
+
+      setReminders(data || [])
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchReminders() }, [petId])
@@ -43,26 +46,65 @@ export default function Reminders({ petId }) {
     })
   }
 
+  const toUTCTimeString = (localTimeStr) => {
+    const [hours, minutes] = localTimeStr.split(':').map(Number)
+
+    const d = new Date()
+    d.setHours(hours, minutes, 0, 0)
+
+    const utcHours = String(d.getUTCHours()).padStart(2, '0')
+    const utcMinutes = String(d.getUTCMinutes()).padStart(2, '0')
+
+    return `${utcHours}:${utcMinutes}`
+  }
+
   const handleAdd = async (e) => {
     e.preventDefault()
     if (form.days.length === 0) return alert('Pick at least one day')
     setAdding(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('reminders').insert({ ...form, pet_id: petId, user_id: user.id })
-    setForm({ title: '', reminder_type: 'feeding', remind_at: '08:00', days: ['daily'] })
-    setShowForm(false)
-    setAdding(false)
-    fetchReminders()
+    try {
+      await apiFetch(`/pets/${petId}/reminders`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          remindAt: toUTCTimeString(form.remindAt)
+        })
+      })
+
+      setForm({ title: '', type: 'feeding', remindAt: '08:00', days: ['daily'], isActive: true })
+      setShowForm(false)
+      setAdding(false)
+      fetchReminders()
+    } catch (error) {
+      setError(error.message)
+      setAdding(false)
+    }
   }
 
   const toggleActive = async (reminder) => {
-    await supabase.from('reminders').update({ is_active: !reminder.is_active }).eq('id', reminder.id)
-    fetchReminders()
+    try {
+      await apiFetch(`/pets/${petId}/reminders/${reminder.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isActive: !reminder.isActive })
+      })
+      fetchReminders()
+    } catch (error) {
+      setError(error.message)
+    }
   }
 
   const handleDelete = async (id) => {
-    await supabase.from('reminders').delete().eq('id', id)
-    fetchReminders()
+    try {
+      await apiFetch(`/pets/${petId}/reminders/${id}`, {
+        method: 'DELETE'
+      })
+
+      fetchReminders()
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   const inputClass = "border dark:border-gray-700 rounded-xl px-3 py-2 text-sm w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-400"
@@ -75,6 +117,7 @@ export default function Reminders({ petId }) {
           className="text-xs bg-violet-600 text-white px-3 py-1.5 rounded-lg hover:bg-violet-700 transition-colors">
           + Add Reminder
         </button>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
       </div>
 
       {/* Notification permission banner */}
@@ -95,108 +138,109 @@ export default function Reminders({ petId }) {
       )}
 
       {/* Add form */}
-      {showForm && (
-        <form onSubmit={handleAdd}
-          className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800/30 rounded-xl p-4 mb-4 flex flex-col gap-3">
-          <input className={inputClass} placeholder="Reminder title *" value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+      {
+        showForm && (
+          <form onSubmit={handleAdd}
+            className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800/30 rounded-xl p-4 mb-4 flex flex-col gap-3">
+            <input className={inputClass} placeholder="Reminder title *" value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Type</label>
-              <select className={inputClass} value={form.reminder_type}
-                onChange={e => setForm(f => ({ ...f, reminder_type: e.target.value }))}>
-                {TYPES.map(t => (
-                  <option key={t} value={t}>{TYPE_EMOJI[t]} {t}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Type</label>
+                <select className={inputClass} value={form.type}
+                  onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+                  {TYPES.map(t => (
+                    <option key={t} value={t}>{TYPE_EMOJI[t]} {t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Time</label>
+                <input className={inputClass} type="time" value={form.remindAt}
+                  onChange={e => setForm(f => ({ ...f, remindAt: e.target.value }))} required />
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Time</label>
-              <input className={inputClass} type="time" value={form.remind_at}
-                onChange={e => setForm(f => ({ ...f, remind_at: e.target.value }))} required />
-            </div>
-          </div>
 
-          {/* Day picker */}
-          <div>
-            <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">Repeat</label>
-            <div className="flex gap-1.5 flex-wrap">
-              <button type="button" onClick={() => toggleDay('daily')}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  form.days.includes('daily')
+            {/* Day picker */}
+            <div>
+              <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">Repeat</label>
+              <div className="flex gap-1.5 flex-wrap">
+                <button type="button" onClick={() => toggleDay('daily')}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${form.days.includes('daily')
                     ? 'bg-violet-600 text-white'
                     : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-                }`}>
-                Daily
-              </button>
-              {ALL_DAYS.map(day => (
-                <button key={day} type="button" onClick={() => toggleDay(day)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
-                    form.days.includes(day) && !form.days.includes('daily')
-                      ? 'bg-violet-600 text-white'
-                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
-                  }`}>
-                  {day}
+                    }`}>
+                  Daily
                 </button>
-              ))}
+                {ALL_DAYS.map(day => (
+                  <button key={day} type="button" onClick={() => toggleDay(day)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${form.days.includes(day) && !form.days.includes('daily')
+                      ? 'bg-violet-600 text-white'
+                      : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'
+                      }`}>
+                    {day}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={() => setShowForm(false)}
-              className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              Cancel
-            </button>
-            <button type="submit" disabled={adding}
-              className="flex-1 bg-violet-600 text-white rounded-xl py-1.5 text-sm hover:bg-violet-700 disabled:opacity-50 transition-colors">
-              {adding ? 'Saving...' : 'Save Reminder'}
-            </button>
-          </div>
-        </form>
-      )}
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setShowForm(false)}
+                className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={adding}
+                className="flex-1 bg-violet-600 text-white rounded-xl py-1.5 text-sm hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                {adding ? 'Saving...' : 'Save Reminder'}
+              </button>
+            </div>
+          </form>
+        )
+      }
 
       {/* Reminder list */}
-      {loading ? (
-        <p className="text-sm text-gray-400 dark:text-gray-600">Loading...</p>
-      ) : reminders.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-6">No reminders set yet</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {reminders.map(r => (
-            <div key={r.id}
-              className={`flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 transition-opacity ${r.is_active ? 'opacity-100' : 'opacity-40'
-                }`}>
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{TYPE_EMOJI[r.reminder_type]}</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-800 dark:text-white">{r.title}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                    {r.remind_at.slice(0, 5)} ·{' '}
-                    {r.days.includes('daily')
-                      ? 'Every day'
-                      : r.days.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
-                  </p>
+      {
+        loading ? (
+          <p className="text-sm text-gray-400 dark:text-gray-600">Loading...</p>
+        ) : reminders.length === 0 ? (
+          <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-6">No reminders set yet</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {reminders.map(r => (
+              <div key={r.id}
+                className={`flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3 transition-opacity ${r.isActive ? 'opacity-100' : 'opacity-40'
+                  }`}>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{TYPE_EMOJI[r.type]}</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white">{r.title}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {new Date(r.remindAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ·{' '}
+                      {r.days.includes('daily')
+                        ? 'Every day'
+                        : r.days.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Toggle */}
+                  <button onClick={() => toggleActive(r)}
+                    className={`w-10 h-5 rounded-full transition-colors relative shrink-0 ${r.isActive ? 'bg-violet-500' : 'bg-gray-300 dark:bg-gray-600'
+                      }`}>
+                    <span className={`absolute left-[1.5px] top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${r.isActive ? 'translate-x-5' : 'translate-x-0.5'
+                      }`} />
+                  </button>
+                  <button onClick={() => handleDelete(r.id)}
+                    className="text-xs text-red-300 hover:text-red-500 dark:text-red-700 dark:hover:text-red-400 transition-colors">
+                    ✕
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                {/* Toggle */}
-                <button onClick={() => toggleActive(r)}
-                  className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${r.is_active ? 'bg-violet-500' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}>
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    r.is_active ? 'translate-x-5' : 'translate-x-0.5'
-                  }`} />
-                </button>
-                <button onClick={() => handleDelete(r.id)}
-                  className="text-xs text-red-300 hover:text-red-500 dark:text-red-700 dark:hover:text-red-400 transition-colors">
-                  ✕
-                </button>
+            ))}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   )
 }

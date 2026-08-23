@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 
 export default function WeightLog({ petId }) {
   const [logs, setLogs] = useState([])
@@ -7,16 +7,18 @@ export default function WeightLog({ petId }) {
   const [form, setForm] = useState({ weight: '', notes: '' })
   const [adding, setAdding] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState('')
 
   const fetchLogs = async () => {
-    const { data } = await supabase
-      .from('weight_logs')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('logged_at', { ascending: false })
-      .limit(10)
-    setLogs(data || [])
-    setLoading(false)
+    try {
+      const { data } = await apiFetch(`/pets/${petId}/weights`, { method: "GET" })
+
+      setLogs(data || [])
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchLogs() }, [petId])
@@ -24,29 +26,43 @@ export default function WeightLog({ petId }) {
   const handleAdd = async (e) => {
     e.preventDefault()
     setAdding(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('weight_logs').insert({
-      weight: parseFloat(form.weight),
-      notes: form.notes,
-      pet_id: petId,
-      user_id: user.id
-    })
-    setForm({ weight: '', notes: '' })
-    setShowForm(false)
-    setAdding(false)
-    fetchLogs()
+    try {
+      await apiFetch(`/pets/${petId}/weights`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...form
+        })
+      })
+
+      setForm({ weight: '', notes: '' })
+      setShowForm(false)
+      setAdding(false)
+      fetchLogs()
+    } catch (error) {
+      setError(error.message)
+      setAdding(false)
+    }
   }
 
   const handleDelete = async (id) => {
-    await supabase.from('weight_logs').delete().eq('id', id)
-    fetchLogs()
+    try {
+      await apiFetch(`/pets/${petId}/weights/${id}`, {
+        method: 'DELETE'
+      })
+
+      fetchLogs()
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   const inputClass = "border dark:border-gray-700 rounded-xl px-3 py-2 text-sm w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400"
 
   const trend = logs.length >= 2
-    ? logs[0].weight > logs[1].weight ? '↑'
-      : logs[0].weight < logs[1].weight ? '↓' : '→'
+    ? Number(logs[0].weight) > Number(logs[1].weight) ? '↑'
+      : Number(logs[0].weight) < Number(logs[1].weight) ? '↓' : '→'
     : null
 
   return (
@@ -55,7 +71,7 @@ export default function WeightLog({ petId }) {
         <h3 className="font-semibold text-gray-800 dark:text-white">
           ⚖️ Weight Log{trend && (
             <span className={`text-sm ml-1 ${trend === '↑' ? 'text-red-400' :
-                trend === '↓' ? 'text-green-500' : 'text-gray-400'
+              trend === '↓' ? 'text-green-500' : 'text-gray-400'
               }`}>{trend}</span>
           )}
         </h3>
@@ -63,6 +79,7 @@ export default function WeightLog({ petId }) {
           className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 transition-colors">
           + Log Weight
         </button>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
       </div>
 
       {showForm && (
@@ -98,7 +115,7 @@ export default function WeightLog({ petId }) {
               <div>
                 <p className="text-sm font-medium text-gray-800 dark:text-white">{log.weight} kg</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {new Date(log.logged_at).toLocaleDateString([], { dateStyle: 'medium' })}
+                  {new Date(log.createdAt).toLocaleDateString([], { dateStyle: 'medium' })}
                 </p>
                 {log.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{log.notes}</p>}
               </div>

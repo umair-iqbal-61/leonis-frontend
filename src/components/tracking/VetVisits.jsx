@@ -1,21 +1,24 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 
 export default function VetVisits({ petId }) {
   const [visits, setVisits] = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ reason: '', vet_name: '', visit_date: '', next_visit: '', notes: '' })
+  const [form, setForm] = useState({ reason: '', vetName: '', visitDate: '', nextVisit: '', notes: '' })
   const [adding, setAdding] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [error, setError] = useState('')
 
   const fetchVisits = async () => {
-    const { data } = await supabase
-      .from('vet_visits')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('visit_date', { ascending: false })
-    setVisits(data || [])
-    setLoading(false)
+    try {
+      const { data } = await apiFetch(`/pets/${petId}/vetvisits`, { method: "GET" })
+
+      setVisits(data || [])
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchVisits() }, [petId])
@@ -23,22 +26,36 @@ export default function VetVisits({ petId }) {
   const handleAdd = async (e) => {
     e.preventDefault()
     setAdding(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('vet_visits').insert({
-      ...form,
-      next_visit: form.next_visit || null,
-      pet_id: petId,
-      user_id: user.id
-    })
-    setForm({ reason: '', vet_name: '', visit_date: '', next_visit: '', notes: '' })
-    setShowForm(false)
-    setAdding(false)
-    fetchVisits()
+    try {
+      await apiFetch(`/pets/${petId}/vetvisits`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...form
+        })
+      })
+
+      setForm({ reason: '', vetName: '', visitDate: '', nextVisit: '', notes: '' })
+      setShowForm(false)
+      setAdding(false)
+      fetchVisits()
+    } catch (error) {
+      setError(error.message)
+      setAdding(false)
+    }
   }
 
   const handleDelete = async (id) => {
-    await supabase.from('vet_visits').delete().eq('id', id)
-    fetchVisits()
+    try {
+      await apiFetch(`/pets/${petId}/vetvisits/${id}`, {
+        method: 'DELETE'
+      })
+
+      fetchVisits()
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   const inputClass = "border dark:border-gray-700 rounded-xl px-3 py-2 text-sm w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400"
@@ -53,6 +70,7 @@ export default function VetVisits({ petId }) {
           className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors">
           + Add Visit
         </button>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
       </div>
 
       {showForm && (
@@ -60,18 +78,18 @@ export default function VetVisits({ petId }) {
           className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-xl p-4 mb-4 flex flex-col gap-3">
           <input className={inputClass} placeholder="Reason *" value={form.reason}
             onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} required />
-          <input className={inputClass} placeholder="Vet name" value={form.vet_name}
-            onChange={e => setForm(f => ({ ...f, vet_name: e.target.value }))} />
+          <input className={inputClass} placeholder="Vet name" value={form.vetName}
+            onChange={e => setForm(f => ({ ...f, vetName: e.target.value }))} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className={labelClass}>Visit date *</label>
-              <input className={inputClass} type="date" value={form.visit_date}
-                onChange={e => setForm(f => ({ ...f, visit_date: e.target.value }))} required />
+              <input className={inputClass} type="date" value={form.visitDate}
+                onChange={e => setForm(f => ({ ...f, visitDate: e.target.value }))} required />
             </div>
             <div>
               <label className={labelClass}>Next visit</label>
-              <input className={inputClass} type="date" value={form.next_visit}
-                onChange={e => setForm(f => ({ ...f, next_visit: e.target.value }))} />
+              <input className={inputClass} type="date" value={form.nextVisit}
+                onChange={e => setForm(f => ({ ...f, nextVisit: e.target.value }))} />
             </div>
           </div>
           <input className={inputClass} placeholder="Notes" value={form.notes}
@@ -102,16 +120,16 @@ export default function VetVisits({ petId }) {
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-white">{visit.reason}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                    {new Date(visit.visit_date).toLocaleDateString([], { dateStyle: 'medium' })}
-                    {visit.vet_name && ` · ${visit.vet_name}`}
+                    {new Date(visit.visitDate).toLocaleDateString([], { dateStyle: 'medium' })}
+                    {visit.vetName && ` · ${visit.vetName}`}
                   </p>
-                  {visit.next_visit && (
-                    <p className={`text-xs mt-1 font-medium ${isUpcoming(visit.next_visit)
-                        ? 'text-amber-500 dark:text-amber-400'
-                        : 'text-gray-400 dark:text-gray-600'
+                  {visit.nextVisit && (
+                    <p className={`text-xs mt-1 font-medium ${isUpcoming(visit.nextVisit)
+                      ? 'text-amber-500 dark:text-amber-400'
+                      : 'text-gray-400 dark:text-gray-600'
                       }`}>
-                      Next: {new Date(visit.next_visit).toLocaleDateString([], { dateStyle: 'medium' })}
-                      {isUpcoming(visit.next_visit) && ' ⏰'}
+                      Next: {new Date(visit.nextVisit).toLocaleDateString([], { dateStyle: 'medium' })}
+                      {isUpcoming(visit.nextVisit) && ' ⏰'}
                     </p>
                   )}
                   {visit.notes && (
