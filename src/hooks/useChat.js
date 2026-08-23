@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { apiFetch } from '../lib/api'
 
 export function useChat(petContext) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const sendMessage = async (text) => {
+  const sendMessage = async (text, petId) => {
     if (!text.trim()) return
 
     const userMessage = { role: 'user', content: text }
@@ -16,25 +16,10 @@ export function useChat(petContext) {
     setError('')
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ messages: updatedMessages, petContext }),
-        }
-      )
-
-      console.log('Status:', res.status)
-      const data = await res.json()
-
-      // Handle error from edge function
-      if (data.error) throw new Error(data.error)
+      const data = await apiFetch(`/pets/${petId}/chat`, {
+        method: 'POST',
+        body: JSON.stringify({ messages: updatedMessages, petContext })
+      })
 
       const reply = data.content?.[0]?.text
       if (!reply) throw new Error(`No reply returned. Raw: ${JSON.stringify(data)}`)

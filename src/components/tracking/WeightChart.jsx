@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { apiFetch } from '../../lib/api'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer
@@ -17,31 +17,37 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-export default function WeightChart({ petId, petName }) {
+export default function WeightChart({ petId }) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
-  const [range, setRange] = useState(30) // days
+  const [range, setRange] = useState(30)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const fetch = async () => {
-      setLoading(true)
-      const from = new Date()
-      from.setDate(from.getDate() - range)
 
-      const { data } = await supabase
-        .from('weight_logs')
-        .select('weight, logged_at')
-        .eq('pet_id', petId)
-        .gte('logged_at', from.toISOString())
-        .order('logged_at', { ascending: true })
+      try {
+        const from = new Date()
+        from.setDate(from.getDate() - range)
 
-      const formatted = (data || []).map(d => ({
-        weight: d.weight,
-        date: new Date(d.logged_at).toLocaleDateString([], { month: 'short', day: 'numeric' })
-      }))
+        const { data } = await apiFetch(`/pets/${petId}/weights`, {
+          method: 'GET'
+        })
 
-      setData(formatted)
-      setLoading(false)
+        const sortedData = (data || []).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        const filteredData = sortedData.filter(d => new Date(d.createdAt) >= from)
+
+        const formatted = filteredData.map(d => ({
+          weight: Number(d.weight),
+          date: new Date(d.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
+        }))
+
+        setData(formatted)
+        setLoading(false)
+      } catch (error) {
+        setError(error.message)
+      }
+
     }
     fetch()
   }, [petId, range])
@@ -65,28 +71,27 @@ export default function WeightChart({ petId, petName }) {
         <div>
           <h3 className="font-semibold text-gray-800 dark:text-white">📈 Weight History</h3>
           {trend !== null && (
-            <p className={`text-xs mt-0.5 ${
-              parseFloat(trend) > 0
-                ? 'text-red-400 dark:text-red-500'
-                : parseFloat(trend) < 0
+            <p className={`text-xs mt-0.5 ${parseFloat(trend) > 0
+              ? 'text-red-400 dark:text-red-500'
+              : parseFloat(trend) < 0
                 ? 'text-green-500 dark:text-green-400'
                 : 'text-gray-400 dark:text-gray-500'
-            }`}>
+              }`}>
               {parseFloat(trend) > 0 ? '↑' : parseFloat(trend) < 0 ? '↓' : '→'}
               {' '}{Math.abs(trend)} kg over this period
             </p>
           )}
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         </div>
 
         {/* Range selector */}
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
           {RANGES.map(r => (
             <button key={r.days} onClick={() => setRange(r.days)}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${
-                range === r.days
-                  ? 'bg-white dark:bg-gray-700 text-violet-700 dark:text-violet-400 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}>
+              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${range === r.days
+                ? 'bg-white dark:bg-gray-700 text-violet-700 dark:text-violet-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}>
               {r.label}
             </button>
           ))}

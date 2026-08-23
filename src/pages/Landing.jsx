@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
 import DarkModeToggle from '../components/DarkModeToggle'
-import { supabase } from '../lib/supabase'
 
 const FEATURES = [
   { icon: '🧠', title: 'AI pet advisor', desc: 'Ask anything about your pet. Gets smarter the more you track.', bg: 'bg-violet-50 dark:bg-violet-900/30' },
@@ -23,19 +21,6 @@ const TESTIMONIALS = [
 ]
 
 export default function Landing() {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-
-  const handleWaitlist = async (e) => {
-    e.preventDefault()
-    const { error } = await supabase.from('waitlist').insert({ email })
-    if (error && error.code === '23505') {
-      setSubmitted(true)
-      return
-    }
-    setSubmitted(true)
-    setEmail('')
-  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors">
@@ -227,21 +212,10 @@ export default function Landing() {
         <p className="text-violet-200 mb-8 max-w-md mx-auto">
           Join thousands of pet owners who track, understand, and improve their pet's health with PawPal.
         </p>
-        {submitted ? (
-          <p className="text-white font-medium">You're on the list! We'll be in touch 🐾</p>
-        ) : (
-          <form onSubmit={handleWaitlist} className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
-            <input
-              type="email" placeholder="Enter your email" value={email}
-              onChange={e => setEmail(e.target.value)} required
-              className="flex-1 px-4 py-3 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-white bg-white"
-            />
-            <button type="submit"
-              className="bg-white text-violet-700 px-5 py-3 rounded-xl text-sm font-medium hover:bg-violet-50 transition-colors whitespace-nowrap">
-              Join waitlist
-            </button>
-          </form>
-        )}
+        <Link to="/signup"
+          className="inline-block bg-white text-violet-700 px-6 py-3 rounded-xl font-medium hover:bg-violet-50 transition-colors">
+          Get started free
+        </Link>
       </section>
 
       {/* Footer */}
