@@ -1,24 +1,25 @@
 import { useEffect, useState, useRef } from 'react'
-import { supabase } from '../../lib/supabase'
-import { uploadPetPhoto, deletePetPhoto } from '../../lib/storage'
+import { apiFetch } from '../../lib/api'
 
 export default function PhotoGallery({ petId }) {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
-  const [preview, setPreview] = useState(null) // full screen preview
-  const [caption, setCaption] = useState('')
+  const [preview, setPreview] = useState(null)
   const fileRef = useRef()
 
   const fetchPhotos = async () => {
-    const { data } = await supabase
-      .from('pet_photos')
-      .select('*')
-      .eq('pet_id', petId)
-      .order('created_at', { ascending: false })
-    setPhotos(data || [])
-    setLoading(false)
+    try {
+      const { data } = await apiFetch(`/pets/${petId}/photos`, {
+        method: 'GET',
+      })
+      setPhotos(data || [])
+      setLoading(false)
+    } catch (error) {
+      setError(error.message)
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchPhotos() }, [petId])
@@ -27,24 +28,19 @@ export default function PhotoGallery({ petId }) {
     const file = e.target.files?.[0]
     if (!file) return
 
+    const formData = new FormData()
+    formData.append('photo', file)
+
     setUploading(true)
-    setError('')
-
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const url = await uploadPetPhoto(file, user.id, petId)
-
-      await supabase.from('pet_photos').insert({
-        pet_id: petId,
-        user_id: user.id,
-        url,
-        caption: caption || null
+      await apiFetch(`/pets/${petId}/photos`, {
+        method: 'POST',
+        body: formData
       })
 
-      setCaption('')
       fetchPhotos()
-    } catch (err) {
-      setError(err.message)
+    } catch (error) {
+      setError(error.message)
     } finally {
       setUploading(false)
       fileRef.current.value = ''
@@ -54,12 +50,11 @@ export default function PhotoGallery({ petId }) {
   const handleDelete = async (photo) => {
     if (!confirm('Delete this photo?')) return
     try {
-      await deletePetPhoto(photo.url)
-      await supabase.from('pet_photos').delete().eq('id', photo.id)
+      await apiFetch(`/pets/${petId}/photos/${photo.id}`, { method: 'DELETE' })
       fetchPhotos()
       if (preview?.id === photo.id) setPreview(null)
-    } catch (err) {
-      setError(err.message)
+    } catch (error) {
+      setError(error.message)
     }
   }
 
@@ -122,13 +117,13 @@ export default function PhotoGallery({ petId }) {
               onClick={() => setPreview(photo)}>
               <img
                 src={photo.url}
-                alt={photo.caption || 'Pet photo'}
+                alt={photo.title || 'Pet photo'}
                 className="w-full h-full object-cover"
               />
               {/* Hover overlay */}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                {photo.caption && (
-                  <p className="text-white text-xs truncate flex-1">{photo.caption}</p>
+                {photo.title && (
+                  <p className="text-white text-xs truncate flex-1">{photo.title}</p>
                 )}
                 <button
                   onClick={e => { e.stopPropagation(); handleDelete(photo) }}
@@ -151,16 +146,16 @@ export default function PhotoGallery({ petId }) {
             onClick={e => e.stopPropagation()}>
             <img
               src={preview.url}
-              alt={preview.caption || 'Pet photo'}
+              alt={preview.title || 'Pet photo'}
               className="w-full max-h-96 object-contain bg-gray-50 dark:bg-gray-800"
             />
             <div className="p-4 flex justify-between items-center">
               <div>
-                {preview.caption && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{preview.caption}</p>
+                {preview.title && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{preview.title}</p>
                 )}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  {new Date(preview.created_at).toLocaleDateString([], { dateStyle: 'medium' })}
+                  {new Date(preview.createdAt).toLocaleDateString([], { dateStyle: 'medium' })}
                 </p>
               </div>
               <div className="flex gap-3">

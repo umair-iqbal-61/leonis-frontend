@@ -7,7 +7,6 @@ import VetVisits from '../../components/tracking/VetVisits'
 import Reminders from '../../components/tracking/Reminders'
 import Chat from '../../components/Chat'
 import WeightChart from '../../components/tracking/WeightChart'
-import { uploadPetPhoto } from '../../lib/storage'
 import { useRef } from 'react'
 import PhotoGallery from '../../components/tracking/PhotoGallery'
 import { apiFetch } from '../../lib/api'
@@ -28,13 +27,16 @@ export default function PetDetail() {
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const formData = new FormData()
+    formData.append('photo', file)
+
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const url = await uploadPetPhoto(file, user.id, id)
-      await supabase.from('pets').update({ avatar_url: url }).eq('id', id)
-      setPet(p => ({ ...p, avatar_url: url }))
-    } catch (err) {
-      console.error(err)
+      const { data: newAvatar } = await apiFetch(`/pets/${id}/avatar`, { method: 'POST', body: formData })
+
+      setPet(p => ({ ...p, avatarUrl: newAvatar.avatarUrl }))
+    } catch (error) {
+      setError(error.message)
     }
   }
 
@@ -42,18 +44,27 @@ export default function PetDetail() {
     const fetchAll = async () => {
       try {
         setLoading(true)
-        const { data } = await apiFetch(`/pets/${id}`, {
-          method: "GET"
+        const { data } = await apiFetch(`/pets/${id}`, { method: "GET" })
+        setPet(data)
+
+        const [meals, weights, vetVisits] = await Promise.all([
+          apiFetch(`/pets/${id}/meals`, { method: "GET" }),
+          apiFetch(`/pets/${id}/weights`, { method: "GET" }),
+          apiFetch(`/pets/${id}/vetvisits`, { method: "GET" })
+        ])
+
+        setChatData({
+          meals: (meals.data || []).slice(0, 5),
+          weight: (weights.data || []).slice(0, 3),
+          vets: (vetVisits.data || []).slice(0, 3)
         })
 
-        setPet(data)
         setLoading(false)
       } catch (error) {
         setError(error.message)
         setLoading(false)
       }
     }
-
     fetchAll()
   }, [id])
 
@@ -95,8 +106,8 @@ export default function PetDetail() {
           <div
             className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-3xl shrink-0 cursor-pointer relative group overflow-hidden"
             onClick={() => avatarRef.current?.click()}>
-            {pet.avatar_url
-              ? <img src={pet.avatar_url} className="w-full h-full object-cover" alt={pet.name} />
+            {pet.avatarUrl
+              ? <img src={pet.avatarUrl} className="w-full h-full object-cover" alt={pet.name} />
               : <span>{emoji}</span>
             }
             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -179,7 +190,6 @@ export default function PetDetail() {
             <VetVisits petId={id} />
             <hr className="border-gray-100 dark:border-gray-800" />
             <Reminders petId={id} />
-            <hr className="border-gray-100 dark:border-gray-800" />
             <hr className="border-gray-100 dark:border-gray-800" />
             <PhotoGallery petId={id} />
           </div>
