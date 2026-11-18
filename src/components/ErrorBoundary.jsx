@@ -1,13 +1,39 @@
 import { Component } from 'react'
+import { useLanguage } from '../hooks/useLanguage'
+import { recordText } from '../lib/recordLanguage'
+
+function ErrorFallback({ onRetry }) {
+  const { language } = useLanguage()
+  const t = key => recordText(language, key)
+  return (
+    <main lang={language} dir={language === 'ur' ? 'rtl' : 'ltr'}
+      className="grid min-h-svh place-items-center bg-canvas px-5 py-12 font-sans text-ink
+        [&:lang(ur)]:font-urdu [&:lang(ur)]:leading-[1.8]">
+      <div className="w-full max-w-110 text-center">
+        <p className="mb-8 font-sans text-3xl font-bold tracking-tight text-accent" dir="ltr">leonis.</p>
+        <h1 className="text-3xl font-semibold">{t('screenError')}</h1>
+        <p className="mt-4 text-sm leading-7 text-muted">{t('refreshHint')}</p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <button type="button" onClick={onRetry}
+            className="glass inline-flex min-h-11 items-center justify-center rounded-control px-4 py-2.5 text-sm font-semibold
+              focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-accent">{t('tryAgain')}</button>
+          <a href="/dashboard"
+            className="inline-flex min-h-11 items-center justify-center rounded-control bg-action px-4 py-2.5 text-sm font-semibold text-white
+              hover:bg-violet-800 focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-accent">{t('goDashboard')}</a>
+        </div>
+      </div>
+    </main>
+  )
+}
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error }
+  static getDerivedStateFromError() {
+    return { hasError: true }
   }
 
   componentDidCatch(error, info) {
@@ -16,38 +42,8 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-8 max-w-md w-full text-center">
-            <p className="text-4xl mb-4">🐾</p>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Something went wrong
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              Don't worry, your pet data is safe. Try refreshing the page.
-            </p>
-            {this.state.error && (
-              <p className="text-xs text-gray-300 dark:text-gray-700 font-mono mb-6 bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-left break-all">
-                {this.state.error.message}
-              </p>
-            )}
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => this.setState({ hasError: false, error: null })}
-                className="border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-4 py-2 rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                Try again
-              </button>
-              <button
-                onClick={() => window.location.href = '/dashboard'}
-                className="bg-violet-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-violet-700 transition-colors">
-                Go to dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-      )
+      return <ErrorFallback onRetry={() => this.setState({ hasError: false })} />
     }
-
     return this.props.children
   }
 }

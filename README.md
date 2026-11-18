@@ -118,7 +118,7 @@ Decoupling storage from the database provider kept the migration clean — Cloud
 
 ## Roadmap
 
-- [ ] Render AI chat Markdown with readable paragraphs, lists, and tables, including mobile and dark-mode support.
+- [x] Render AI chat Markdown with readable paragraphs, lists, and tables, including mobile and dark-mode support.
 
 - [ ] PWA support for true background notifications
 - [ ] Weight chart export as PNG/CSV

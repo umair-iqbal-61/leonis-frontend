@@ -1,3 +1,94 @@
-@import "tailwindcss";
-/* Dark mode variant */
+@import 'tailwindcss';
+
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-urdu: 'Noto Naskh Arabic', system-ui, sans-serif;
+  --color-canvas: #f7f6f3;
+  --color-surface: #fff;
+  --color-ink: #272335;
+  --color-muted: #686274;
+  --color-line: #e6e2ec;
+  --color-accent: #6d28d9;
+  --color-action: #6d28d9;
+  --color-action-dark: #7c3aed;
+  --color-portrait: #eee9f5;
+  --color-portrait-dark: #2c2639;
+  --color-glass-solid: #fff;
+  --color-glass-edge: #fff;
+  --color-glass-tint: #ffffff94;
+  --color-glass-tint-edge: #ffffffd9;
+  --color-header-glass: #f7f6f3d9;
+  --shadow-glass: inset 0 1px 0 #ffffff70, 0 3px 9px #27233509;
+  --radius-control: 14px;
+  --radius-panel: 22px;
+  --radius-card: 18px;
+  --radius-portrait: 24px;
+  --animate-workspace-enter: workspace-enter 220ms ease-out;
+
+  @keyframes workspace-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  .dark {
+    --color-canvas: #111019;
+    --color-surface: #1b1925;
+    --color-ink: #f0edf8;
+    --color-muted: #b7b0c7;
+    --color-line: #373141;
+    --color-accent: #c4b5fd;
+    --color-glass-solid: #302a3d;
+    --color-glass-edge: #524861;
+    --color-glass-tint: #ffffff0c;
+    --color-glass-tint-edge: #ffffff26;
+    --color-header-glass: #111019db;
+    --shadow-glass: inset 0 1px 0 #ffffff12, 0 3px 9px #00000014;
+  }
+}
+
+/* Reusable effects only. Layout, typography and states live in JSX utilities. */
+@utility glass {
+  background: var(--color-glass-solid);
+  border: 1px solid var(--color-glass-edge);
+  box-shadow: var(--shadow-glass);
+
+  @supports ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
+    background: linear-gradient(135deg, #ffffff38, #ffffff00 60%), var(--color-glass-tint);
+    border-color: var(--color-glass-tint-edge);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--color-surface);
+    border-color: var(--color-line);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-header {
+  background: var(--color-canvas);
+
+  @supports ((backdrop-filter: blur(16px)) or (-webkit-backdrop-filter: blur(16px))) {
+    background: var(--color-header-glass);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

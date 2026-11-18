@@ -1,7 +1,11 @@
+import { useLanguage } from '../../hooks/useLanguage'
+import { recordText } from '../../lib/recordLanguage'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 
 export default function WeightLog({ petId }) {
+  const { language } = useLanguage()
+  const t = key => recordText(language, key)
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ weight: '', notes: '' })
@@ -73,7 +77,7 @@ export default function WeightLog({ petId }) {
     }
   }
 
-  const inputClass = "border dark:border-gray-700 rounded-xl px-3 py-2 text-sm w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-400"
+  const inputClass = 'block w-full min-w-0 min-h-12 py-[11px] px-[13px] text-ink bg-canvas border border-line rounded-xl [font-family:inherit] text-[16px] font-normal leading-[1.5]'
 
   const trend = logs.length >= 2
     ? Number(logs[0].weight) > Number(logs[1].weight) ? '↑'
@@ -81,61 +85,94 @@ export default function WeightLog({ petId }) {
     : null
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-gray-800 dark:text-white">
-          ⚖️ Weight Log{trend && (
-            <span className={`text-sm ml-1 ${trend === '↑' ? 'text-red-400' :
-              trend === '↓' ? 'text-green-500' : 'text-gray-400'
-              }`}>{trend}</span>
+    <div className="min-w-0 [&_button]:min-w-11 [&_button]:min-h-11 [&_:is(input,select,textarea)]:max-w-full [&_.flex]:min-w-0">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6 [&_h3]:text-ink [&_h3]:text-[17px] [&_h3]:font-semibold
+              [&_[role='alert']]:[flex-basis:100%] max-md:[&_h3]:text-[16px]">
+        <h3 className="font-semibold text-ink">
+          {t('weightLog')}{trend && (
+            <span className="ms-1 text-sm text-accent">{trend}</span>
           )}
         </h3>
         <button onClick={() => setShowForm(!showForm)}
-          className="text-xs bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 transition-colors">
-          + Log Weight
+          className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] bg-action text-white border border-action shadow-[0_4px_10px_#6d28d91a]
+              dark:bg-action-dark dark:border-action-dark hover:bg-[#5b21b6] hover:-translate-y-px disabled:opacity-[0.6]
+              disabled:cursor-wait disabled:transform-none">
+          {t('logWeight')}
         </button>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && <p role="alert" className="border-s-[3px] border-[#be123c] py-3 px-4 mb-6 text-[#a52940] bg-[#fff1f2] rounded-lg wrap-anywhere dark:bg-[#411b29] dark:text-[#fecdd3]">{error}</p>}
       </div>
 
       {showForm && (
         <form onSubmit={handleAdd}
-          className="bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/30 rounded-xl p-4 mb-4 flex flex-col gap-3">
-          <input className={inputClass} type="number" step="0.1" min="0"
-            placeholder="Weight in kg *" value={form.weight}
+          className="grid gap-5 text-ink [&>label]:grid [&>label]:gap-2 [&>label]:min-w-0 [&>label]:text-[14px]
+              [&>label]:font-medium [&_:is(input:not([type='checkbox']),select,textarea)]:block
+              [&_:is(input:not([type='checkbox']),select,textarea)]:w-full
+              [&_:is(input:not([type='checkbox']),select,textarea)]:min-w-0
+              [&_:is(input:not([type='checkbox']),select,textarea)]:min-h-12
+              [&_:is(input:not([type='checkbox']),select,textarea)]:py-[11px]
+              [&_:is(input:not([type='checkbox']),select,textarea)]:px-[13px]
+              [&_:is(input:not([type='checkbox']),select,textarea)]:text-ink
+              [&_:is(input:not([type='checkbox']),select,textarea)]:bg-canvas
+              [&_:is(input:not([type='checkbox']),select,textarea)]:border
+              [&_:is(input:not([type='checkbox']),select,textarea)]:border-line
+              [&_:is(input:not([type='checkbox']),select,textarea)]:rounded-xl
+              [&_:is(input:not([type='checkbox']),select,textarea)]:[font-family:inherit]
+              [&_:is(input:not([type='checkbox']),select,textarea)]:text-[16px]
+              [&_:is(input:not([type='checkbox']),select,textarea)]:font-normal
+              [&_:is(input:not([type='checkbox']),select,textarea)]:leading-[1.5] [&_textarea]:resize-y [&_textarea]:min-h-26
+              mb-6 p-5 border border-line rounded-2xl max-md:py-4 max-md:px-3">
+          <label className="grid gap-2 min-w-0 text-[14px] font-medium">{t('weightKg')}
+            <input className={inputClass} type="number" step="0.1" min="0"
+            value={form.weight}
             onChange={e => setForm(f => ({ ...f, weight: e.target.value }))} required />
-          <input className={inputClass} placeholder="Notes (optional)"
+          </label>
+          <label className="grid gap-2 min-w-0 text-[14px] font-medium">{t('notes')}
+            <input className={inputClass}
             value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+          </label>
           <div className="flex gap-2">
             <button type="button" onClick={() => setShowForm(false)}
-              className="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              Cancel
+              className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] text-ink disabled:opacity-[0.55] disabled:cursor-wait
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] flex-1 glass">
+              {t('cancel')}
             </button>
             <button type="submit" disabled={adding}
-              className="flex-1 bg-teal-600 text-white rounded-xl py-1.5 text-sm hover:bg-teal-700 disabled:opacity-50 transition-colors">
-              {adding ? 'Saving...' : 'Save'}
+              className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] bg-action text-white border border-action shadow-[0_4px_10px_#6d28d91a]
+              dark:bg-action-dark dark:border-action-dark hover:bg-[#5b21b6] hover:-translate-y-px disabled:opacity-[0.6]
+              disabled:cursor-wait disabled:transform-none flex-1">
+              {adding ? t('saving') : t('save')}
             </button>
           </div>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-400 dark:text-gray-600">Loading...</p>
+        <p className="text-sm text-muted">{t('load')}</p>
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-gray-600 text-center py-6">No weight logs yet</p>
+        <p className="text-sm text-muted text-center py-6">{t('noWeights')}</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="grid gap-0">
           {logs.map(log => (
             <div key={log.id}
-              className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
+              className="flex items-start justify-between gap-3 py-4.5 px-0 bg-transparent border-b border-line [&>div]:min-w-0 [&>div]:wrap-anywhere [&_p]:min-w-0 [&_p]:wrap-anywhere">
               <div>
-                <p className="text-sm font-medium text-gray-800 dark:text-white">{log.weight} kg</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  {new Date(log.createdAt).toLocaleDateString([], { dateStyle: 'medium' })}
+                <p className="text-sm font-medium text-ink">{log.weight} kg</p>
+                <p className="text-xs text-muted">
+                  {new Date(log.createdAt).toLocaleDateString(language === 'ur' ? 'ur-PK' : 'en-GB', { dateStyle: 'medium' })}
                 </p>
-                {log.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{log.notes}</p>}
+                {log.notes && <p className="text-xs text-muted mt-0.5">{log.notes}</p>}
               </div>
-              <button onClick={() => handleDelete(log.id)}
-                className="text-xs text-red-300 hover:text-red-500 dark:text-red-700 dark:hover:text-red-400 transition-colors">
+              <button aria-label={t('remove')} onClick={() => handleDelete(log.id)}
+                className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] disabled:opacity-[0.55] disabled:cursor-wait text-[#a52940] dark:text-[#fda4af]
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] glass">
                 ✕
               </button>
             </div>

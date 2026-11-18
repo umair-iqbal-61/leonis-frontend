@@ -28,7 +28,7 @@ export default function SpeciesGuide({ pet, language }) {
       {!entries && !error && <p role="status">{t('load')}</p>}
       {entries?.length === 0 && <p className="text-sm">{t('noGuide')}</p>}
       {entries?.map(entry => (
-        <article key={entry.id} className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+        <article key={entry.id} className="py-5 border-b border-line wrap-anywhere space-y-3">
           <h4 className="font-medium">{entry.title[language] ?? entry.title.en}</h4>
           <p className="text-sm">{entry.text[language] ?? entry.text.en}</p>
           <a className="text-sm text-violet-700 underline dark:text-violet-300" href={entry.source.url}>{entry.source.title}</a>

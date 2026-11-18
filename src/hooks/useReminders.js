@@ -14,7 +14,7 @@ export function useReminders() {
   }
 
   const checkAndFire = async () => {
-    if (Notification.permission !== 'granted') return
+    if (!localStorage.getItem('token') || !('Notification' in window) || Notification.permission !== 'granted') return
 
     const now = new Date()
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
@@ -38,9 +38,10 @@ export function useReminders() {
   }
 
   useEffect(() => {
-    requestPermission()
-    // Check every minute
-    intervalRef.current = setInterval(checkAndFire, 60 * 1000)
+    // Permission is requested by the owner's Enable notifications action.
+    intervalRef.current = setInterval(() => {
+      checkAndFire().catch(error => console.error('Reminder check failed:', error))
+    }, 60 * 1000)
     return () => clearInterval(intervalRef.current)
   }, [])
 

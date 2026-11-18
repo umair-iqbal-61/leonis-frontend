@@ -1,13 +1,22 @@
+import { useLanguage } from '../../hooks/useLanguage'
+import { recordText } from '../../lib/recordLanguage'
 import { useEffect, useState, useRef } from 'react'
 import { apiFetch } from '../../lib/api'
 
 export default function PhotoGallery({ petId }) {
+  const { language } = useLanguage()
+  const t = key => recordText(language, key)
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [preview, setPreview] = useState(null)
   const fileRef = useRef()
+  const dialogRef = useRef()
+
+  useEffect(() => {
+    if (preview) dialogRef.current?.showModal()
+  }, [preview])
 
   const fetchPhotos = async () => {
     try {
@@ -63,7 +72,7 @@ export default function PhotoGallery({ petId }) {
   }
 
   const handleDelete = async (photo) => {
-    if (!confirm('Delete this photo?')) return
+    if (!confirm(t('confirmPhotoDelete'))) return
     try {
       await apiFetch(`/pets/${petId}/photos/${photo.id}`, { method: 'DELETE' })
       fetchPhotos()
@@ -74,121 +83,59 @@ export default function PhotoGallery({ petId }) {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-gray-800 dark:text-white">📸 Photo Gallery</h3>
-        <button
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          className="text-xs bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 disabled:opacity-50 transition-colors">
-          {uploading ? 'Uploading...' : '+ Add Photo'}
+    <section className="min-w-0 [&_button]:min-w-11 [&_button]:min-h-11 [&_:is(input,select,textarea)]:max-w-full [&_.flex]:min-w-0">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6 [&_h3]:text-ink [&_h3]:text-[17px] [&_h3]:font-semibold
+              [&_[role='alert']]:[flex-basis:100%] max-md:[&_h3]:text-[16px]">
+        <h3>{t('Photos')}</h3>
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] bg-action text-white border border-action shadow-[0_4px_10px_#6d28d91a]
+              dark:bg-action-dark dark:border-action-dark hover:bg-[#5b21b6] hover:-translate-y-px disabled:opacity-[0.6]
+              disabled:cursor-wait disabled:transform-none">
+          {t(uploading ? 'uploading' : 'addPhoto')}
         </button>
       </div>
-
-      {/* Hidden file input */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleUpload}
-      />
-
-      {error && (
-        <p className="text-xs text-red-400 dark:text-red-500 mb-3">{error}</p>
-      )}
-
-      {loading ? (
-        <p className="text-sm text-gray-400 dark:text-gray-600">Loading...</p>
-      ) : photos.length === 0 ? (
-        <div
-          onClick={() => fileRef.current?.click()}
-          className="h-40 flex flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 cursor-pointer hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
-          <p className="text-3xl">📷</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500">Tap to add your first photo</p>
-          <p className="text-xs text-gray-300 dark:text-gray-600">JPG, PNG, WebP up to 5MB</p>
-        </div>
+      <input ref={fileRef} type="file" accept="image/*" capture="environment"
+        className="sr-only" tabIndex={-1} aria-label={t('addPhoto')} onChange={handleUpload} />
+      {error && <p role="alert" className="border-s-[3px] border-[#be123c] py-3 px-4 mb-6 text-[#a52940] bg-[#fff1f2] rounded-lg wrap-anywhere dark:bg-[#411b29] dark:text-[#fecdd3]">{error}</p>}
+      {loading ? <p role="status" className="text-muted py-12 text-center">{t('load')}</p> : photos.length === 0 ? (
+        <button type="button" className="flex flex-col items-center justify-center gap-2.5 w-full min-h-45 p-6 text-muted bg-canvas border border-dashed border-line rounded-2xl cursor-pointer" disabled={uploading} onClick={() => fileRef.current?.click()}>
+          <span>{t('firstPhoto')}</span><small>{t('photoFormats')}</small>
+        </button>
       ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {/* Upload tile */}
-          <div
-            onClick={() => fileRef.current?.click()}
-            className="aspect-square rounded-xl bg-gray-50 dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-pink-300 dark:hover:border-pink-700 transition-colors">
-            {uploading ? (
-              <div className="w-5 h-5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <p className="text-2xl">📷</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add</p>
-              </>
-            )}
-          </div>
-
-          {/* Photo tiles */}
+        <div className="grid grid-cols-3 gap-3 max-md:grid-cols-2">
           {photos.map(photo => (
-            <div key={photo.id}
-              className="aspect-square rounded-xl overflow-hidden relative group cursor-pointer"
-              onClick={() => setPreview(photo)}>
-              <img
-                src={photo.url}
-                alt={photo.title || 'Pet photo'}
-                className="w-full h-full object-cover"
-              />
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                {photo.title && (
-                  <p className="text-white text-xs truncate flex-1">{photo.title}</p>
-                )}
-                <button
-                  onClick={e => { e.stopPropagation(); handleDelete(photo) }}
-                  className="text-white/80 hover:text-red-400 transition-colors ml-auto text-xs">
-                  ✕
-                </button>
-              </div>
-            </div>
+            <button type="button" key={photo.id} className="overflow-hidden aspect-square rounded-control cursor-pointer [&_img]:w-full [&_img]:h-full [&_img]:object-cover
+              [&_img]:transition-[transform] [&_img]:duration-[180ms] [&_img]:ease-[ease] hover:[&_img]:scale-[1.03]" onClick={() => setPreview(photo)}
+              aria-label={t('openPhoto') + (photo.title ? ': ' + photo.title : '')}>
+              <img src={photo.url} alt={photo.title || t('animalPhoto')} loading="lazy" />
+            </button>
           ))}
         </div>
       )}
-
-      {/* Full screen preview */}
       {preview && (
-        <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-          onClick={() => setPreview(null)}>
-          <div
-            className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden max-w-lg w-full shadow-xl"
-            onClick={e => e.stopPropagation()}>
-            <img
-              src={preview.url}
-              alt={preview.title || 'Pet photo'}
-              className="w-full max-h-96 object-contain bg-gray-50 dark:bg-gray-800"
-            />
-            <div className="p-4 flex justify-between items-center">
-              <div>
-                {preview.title && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{preview.title}</p>
-                )}
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  {new Date(preview.createdAt).toLocaleDateString([], { dateStyle: 'medium' })}
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleDelete(preview)}
-                  className="text-sm text-red-400 hover:text-red-600 transition-colors">
-                  Delete
-                </button>
-                <button
-                  onClick={() => setPreview(null)}
-                  className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                  Close
-                </button>
-              </div>
+        <dialog ref={dialogRef} className="w-[min(640px,_calc(100%_-_32px))] max-h-[calc(100svh_-_32px)] m-auto overflow-auto p-0 text-ink bg-surface
+              border border-line rounded-panel [&::backdrop]:bg-[#111019b3] [&>img]:w-full [&>img]:max-h-[65svh]
+              [&>img]:object-contain [&>img]:bg-canvas" onClose={() => setPreview(null)} aria-label={t('animalPhoto')}>
+          <img src={preview.url} alt={preview.title || t('animalPhoto')} />
+          <div className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div>
+              {preview.title && <p>{preview.title}</p>}
+              <p className="text-muted text-[13px] leading-[1.7]">{new Date(preview.createdAt).toLocaleDateString(language === 'ur' ? 'ur-PK' : 'en-GB', { dateStyle: 'medium' })}</p>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2.5 max-md:[&>button]:flex-1">
+              <button type="button" className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] disabled:opacity-[0.55] disabled:cursor-wait text-[#a52940] dark:text-[#fda4af]
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] glass" onClick={() => handleDelete(preview)}>{t('remove')}</button>
+              <button type="button" autoFocus className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] text-ink disabled:opacity-[0.55] disabled:cursor-wait
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] glass" onClick={() => dialogRef.current.close()}>{t('close')}</button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
-    </div>
+    </section>
   )
 }

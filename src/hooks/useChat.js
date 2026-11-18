@@ -1,7 +1,10 @@
+import { useLanguage } from './useLanguage'
+import { recordText } from '../lib/recordLanguage'
 import { useState } from 'react'
 import { apiFetch } from '../lib/api'
 
 export function useChat() {
+  const { language } = useLanguage()
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -22,12 +25,12 @@ export function useChat() {
       })
 
       const reply = data.content?.[0]?.text
-      if (!reply) throw new Error(`No reply returned. Raw: ${JSON.stringify(data)}`)
+      if (!reply) throw new Error('No reply returned')
 
       setMessages(m => [...m, { role: 'assistant', content: reply }])
     } catch (err) {
       console.error('Chat error:', err)
-      setError(`Failed: ${err.message}`)
+      setError(recordText(language, 'chatUnavailable'))
     } finally {
       setLoading(false)
     }

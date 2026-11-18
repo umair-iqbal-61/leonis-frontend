@@ -1,170 +1,119 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../../hooks/useLanguage'
+import { recordText } from '../../lib/recordLanguage'
 import { apiFetch } from '../../lib/api'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer
+  Tooltip, ResponsiveContainer,
 } from 'recharts'
 
-const CustomTooltip = ({ active, payload, label }) => {
+function CustomTooltip({ active, payload, label, unit }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm">
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{label}</p>
-      <p className="text-sm font-semibold text-violet-600 dark:text-violet-400">
-        {payload[0].value} kg
-      </p>
+    <div className="rounded-xl border border-line bg-surface px-3 py-2 text-ink shadow-sm">
+      <p className="mb-1 text-xs text-muted">{label}</p>
+      <p className="text-sm font-semibold text-accent">{payload[0].value} {unit}</p>
     </div>
   )
 }
 
 export default function WeightChart({ petId }) {
+  const { language } = useLanguage()
+  const t = key => recordText(language, key)
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState(30)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const fetch = async () => {
+    const controller = new AbortController()
+    const from = new Date()
+    if (range !== null) from.setDate(from.getDate() - range)
 
-      try {
-        const from = new Date()
-        from.setDate(from.getDate() - range)
+    apiFetch('/pets/' + petId + '/weights', { signal: controller.signal })
+      .then(({ data }) => {
+        if (controller.signal.aborted) return
+        const records = [...(data || [])]
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+          .filter(item => range === null || new Date(item.createdAt) >= from)
+        setData(records.map(item => ({
+          weight: Number(item.weight),
+          date: new Date(item.createdAt).toLocaleDateString(language === 'ur' ? 'ur-PK' : 'en-GB', { month: 'short', day: 'numeric' }),
+        })))
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [petId, range, language])
 
-        const { data } = await apiFetch(`/pets/${petId}/weights`, {
-          method: 'GET'
-        })
-
-        const sortedData = (data || []).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-        const filteredData = sortedData.filter(d => new Date(d.createdAt) >= from)
-
-        const formatted = filteredData.map(d => ({
-          weight: Number(d.weight),
-          date: new Date(d.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
-        }))
-
-        setData(formatted)
-        setLoading(false)
-      } catch (error) {
-        setError(error.message)
-      }
-
-    }
-    fetch()
-  }, [petId, range])
-
-  const RANGES = [
-    { label: '2W', days: 14 },
-    { label: '1M', days: 30 },
-    { label: '3M', days: 90 },
-    { label: 'All', days: 3650 },
+  const ranges = [
+    { label: 'range14', days: 14 },
+    { label: 'range30', days: 30 },
+    { label: 'range90', days: 90 },
+    { label: 'rangeAll', days: null },
   ]
-
-  // calculate trend
-  const trend = data.length >= 2
-    ? (data[data.length - 1].weight - data[0].weight).toFixed(1)
-    : null
+  const trend = data.length >= 2 ? data.at(-1).weight - data[0].weight : null
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
+    <section className="min-w-0 space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-gray-800 dark:text-white">📈 Weight History</h3>
-          {trend !== null && (
-            <p className={`text-xs mt-0.5 ${parseFloat(trend) > 0
-              ? 'text-red-400 dark:text-red-500'
-              : parseFloat(trend) < 0
-                ? 'text-green-500 dark:text-green-400'
-                : 'text-gray-400 dark:text-gray-500'
-              }`}>
-              {parseFloat(trend) > 0 ? '↑' : parseFloat(trend) < 0 ? '↓' : '→'}
-              {' '}{Math.abs(trend)} kg over this period
-            </p>
-          )}
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          <h3 className="text-[17px] font-semibold text-ink max-md:text-base">{t('weightHistory')}</h3>
+          {trend !== null && <p className="mt-1 text-xs text-muted">
+            <bdi>{trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {Math.abs(trend).toFixed(1)} {t('overPeriod')}</bdi>
+          </p>}
         </div>
-
-        {/* Range selector */}
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {RANGES.map(r => (
-            <button key={r.days} onClick={() => setRange(r.days)}
-              className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors ${range === r.days
-                ? 'bg-white dark:bg-gray-700 text-violet-700 dark:text-violet-400 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}>
-              {r.label}
-            </button>
+        <div className="flex max-w-full flex-wrap gap-1 rounded-control border border-line bg-canvas p-1" role="group" aria-label={t('chartRange')}>
+          {ranges.map(item => (
+            <button type="button" key={item.label} aria-pressed={range === item.days}
+              className="min-h-11 min-w-11 cursor-pointer rounded-[10px] px-3 text-xs font-medium text-muted
+                transition-colors hover:text-ink aria-pressed:bg-surface aria-pressed:text-accent aria-pressed:shadow-sm"
+              onClick={() => {
+                if (range === item.days) return
+                setLoading(true)
+                setError('')
+                setRange(item.days)
+              }}>{t(item.label)}</button>
           ))}
         </div>
       </div>
-
-      {/* Chart */}
-      {loading ? (
-        <div className="h-48 flex items-center justify-center">
-          <p className="text-sm text-gray-400 dark:text-gray-600">Loading...</p>
-        </div>
-      ) : data.length < 2 ? (
-        <div className="h-48 flex flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-          <p className="text-2xl">⚖️</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
-            Log at least 2 weights<br />to see the chart
-          </p>
-        </div>
-      ) : (
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="currentColor"
-                className="text-gray-100 dark:text-gray-800"
-              />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                stroke="currentColor"
-                className="text-gray-400 dark:text-gray-500"
-              />
-              <YAxis
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                stroke="currentColor"
-                className="text-gray-400 dark:text-gray-500"
-                domain={['dataMin - 0.5', 'dataMax + 0.5']}
-                tickFormatter={v => `${v}kg`}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Line
-                type="monotone"
-                dataKey="weight"
-                stroke="#7C3AED"
-                strokeWidth={2}
-                dot={{ fill: '#7C3AED', r: 3, strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: '#7C3AED', strokeWidth: 0 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Min / Max / Avg stats */}
-      {data.length >= 2 && (
-        <div className="grid grid-cols-3 gap-3 mt-4">
+      {error && <p role="alert" className="rounded-lg border-s-[3px] border-rose-700 bg-rose-50 p-3 text-sm text-rose-800 dark:bg-rose-950/40 dark:text-rose-200">{error}</p>}
+      {loading ? <p role="status" className="grid h-56 place-items-center text-sm text-muted">{t('load')}</p>
+        : data.length < 2 ? <p className="grid h-56 place-items-center rounded-xl border border-dashed border-line bg-canvas p-6 text-center text-sm text-muted">{t('chartHint')}</p>
+        : (
+          <div className="h-56 min-w-0 text-muted" dir="ltr" role="group" aria-label={t('weightHistory')}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} stroke="currentColor" />
+                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} stroke="currentColor"
+                  domain={['dataMin - 0.5', 'dataMax + 0.5']} tickFormatter={value => value + ' ' + t('kg')} />
+                <Tooltip content={<CustomTooltip unit={t('kg')} />} />
+                <Line type="monotone" dataKey="weight" stroke="var(--color-accent)" strokeWidth={2}
+                  dot={{ fill: 'var(--color-accent)', r: 3, strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: 'var(--color-accent)', strokeWidth: 0 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      {!loading && data.length >= 2 && (
+        <dl className="grid grid-cols-3 gap-3 border-t border-line pt-4 text-center">
           {[
-            { label: 'Lowest', value: `${Math.min(...data.map(d => d.weight))} kg` },
-            { label: 'Average', value: `${(data.reduce((s, d) => s + d.weight, 0) / data.length).toFixed(1)} kg` },
-            { label: 'Highest', value: `${Math.max(...data.map(d => d.weight))} kg` },
-          ].map(s => (
-            <div key={s.label} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 text-center">
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{s.label}</p>
-              <p className="text-sm font-semibold text-gray-800 dark:text-white">{s.value}</p>
+            { label: 'lowest', value: Math.min(...data.map(item => item.weight)) },
+            { label: 'average', value: (data.reduce((sum, item) => sum + item.weight, 0) / data.length).toFixed(1) },
+            { label: 'highest', value: Math.max(...data.map(item => item.weight)) },
+          ].map(item => (
+            <div key={item.label} className="min-w-0">
+              <dt className="text-xs text-muted">{t(item.label)}</dt>
+              <dd className="mt-2 wrap-anywhere text-sm font-semibold text-ink"><bdi>{item.value} {t('kg')}</bdi></dd>
             </div>
           ))}
-        </div>
+        </dl>
       )}
-    </div>
+    </section>
   )
 }

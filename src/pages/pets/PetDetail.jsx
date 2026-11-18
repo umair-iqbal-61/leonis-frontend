@@ -1,203 +1,174 @@
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { apiFetch } from '../../lib/api'
+import { recordText } from '../../lib/recordLanguage'
+import { useLanguage } from '../../hooks/useLanguage'
 import SpeciesGuide from '../../components/tracking/SpeciesGuide'
 import DairyRecords from '../../components/tracking/DairyRecords'
 import RecordQuality from '../../components/tracking/RecordQuality'
-import { recordText } from '../../lib/recordLanguage'
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
 import MealLog from '../../components/tracking/MealLog'
 import WeightLog from '../../components/tracking/WeightLog'
 import VetVisits from '../../components/tracking/VetVisits'
 import Reminders from '../../components/tracking/Reminders'
-import Chat from '../../components/Chat'
-import WeightChart from '../../components/tracking/WeightChart'
-import { useRef } from 'react'
 import PhotoGallery from '../../components/tracking/PhotoGallery'
-import { apiFetch } from '../../lib/api'
 
-const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', 'dairy-cattle': '🐄', other: '🐾' }
-const TABS = ['Overview', 'Meals', 'Weight', 'Chart', 'Vet Visits', 'Reminders', 'Photos', 'AI Chat']
+const Chat = lazy(() => import('../../components/Chat'))
+const WeightChart = lazy(() => import('../../components/tracking/WeightChart'))
+
+const speciesEmoji = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', 'dairy-cattle': '🐄', other: '🐾' }
+const tabs = ['Overview', 'quality', 'Meals', 'Weight', 'Chart', 'Vet Visits', 'Reminders', 'Photos', 'AI Chat', 'guide']
 
 export default function PetDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { language } = useLanguage()
+  const t = (key, parameters) => recordText(language, key, parameters)
   const [pet, setPet] = useState(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
-  const [language, setLanguage] = useState(() => localStorage.getItem('record-language') === 'ur' ? 'ur' : 'en')
   const avatarRef = useRef()
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const formData = new FormData()
-    formData.append('photo', file)
-
-    try {
-      const { data: newAvatar } = await apiFetch(`/pets/${id}/avatar`, { method: 'POST', body: formData })
-
-      setPet(p => ({ ...p, avatarUrl: newAvatar.avatarUrl }))
-    } catch (error) {
-      setError(error.message)
-    }
-  }
-
   useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        setLoading(true)
-        const { data } = await apiFetch(`/pets/${id}`, { method: "GET" })
-        setPet(data)
-
-        setLoading(false)
-      } catch (error) {
-        setError(error.message)
-        setLoading(false)
-      }
-    }
-    fetchAll()
+    const controller = new AbortController()
+    apiFetch(`/pets/${id}`, { signal: controller.signal })
+      .then(({ data }) => { if (!controller.signal.aborted) setPet(data) })
+      .catch(error => { if (!controller.signal.aborted) setError(error.message) })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
   }, [id])
 
-  const handleDelete = async () => {
+  async function handleAvatarUpload(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const body = new FormData()
+    body.append('photo', file)
+    setUploading(true)
+    setError('')
     try {
-      setLoading(true)
-      await apiFetch(`/pets/${id}`, {
-        method: "DELETE"
-      })
-      navigate('/dashboard')
-      setLoading(false)
+      const { data } = await apiFetch(`/pets/${id}/avatar`, { method: 'POST', body })
+      setPet(current => ({ ...current, avatarUrl: data.avatarUrl }))
     } catch (error) {
       setError(error.message)
-      setLoading(false)
+    } finally {
+      setUploading(false)
+      if (avatarRef.current) avatarRef.current.value = ''
     }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-sm text-gray-400 dark:text-gray-600">Loading...</p>
-    </div>
-  )
+  async function handleDelete() {
+    if (!window.confirm(t('confirmDeleteAnimal', { name: pet.name }))) return
+    try {
+      await apiFetch(`/pets/${id}`, { method: 'DELETE' })
+      navigate('/dashboard')
+    } catch (error) {
+      setError(error.message)
+    }
+  }
 
-  if (!pet) return null
+  if (loading) return <p role="status" className="text-muted py-12 text-center">{t('load')}</p>
+  if (!pet) return <p role="alert" className="border-s-[3px] border-[#be123c] py-3 px-4 mb-6 text-[#a52940] bg-[#fff1f2] rounded-lg wrap-anywhere dark:bg-[#411b29] dark:text-[#fecdd3]">{error || t('error')}</p>
 
-  const recordTabs = ['quality', 'guide']
-  if (pet.species === 'dairy-cattle') recordTabs.push('dairy')
-  const recordTab = recordTabs.includes(activeTab)
-  const emoji = SPECIES_EMOJI[pet.species] || '🐾'
+  const visibleTabs = pet.species === 'dairy-cattle' ? [...tabs, 'dairy'] : tabs
+  const recordTab = ['quality', 'guide', 'dairy'].includes(activeTab)
+  const details = [
+    { label: 'age', value: pet.age != null ? t('yearsOld', { value: pet.age }) : t('missing') },
+    { label: 'weight', value: pet.weight != null ? `${pet.weight} ${t('kg')}` : t('missing') },
+    { label: 'gender', value: pet.gender ? t(pet.gender) : t('missing') },
+  ]
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <button onClick={() => navigate('/dashboard')}
-        className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-6 flex items-center gap-1 transition-colors">
-        ← Back
-      </button>
-      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-
-      {/* Pet header */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6 mb-4">
-        <div className="flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center text-3xl shrink-0 cursor-pointer relative group overflow-hidden"
-            onClick={() => avatarRef.current?.click()}>
-            {pet.avatarUrl
-              ? <img src={pet.avatarUrl} className="w-full h-full object-cover" alt={pet.name} />
-              : <span>{emoji}</span>
-            }
-            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <span className="text-white text-xs">📷</span>
+    <div className="animate-workspace-enter motion-reduce:animate-none">
+      <Link to="/dashboard" className="inline-flex items-center gap-2.5 min-h-11 mb-6 text-muted text-[14px] max-md:mb-4"><span aria-hidden="true">{language === 'ur' ? '→' : '←'}</span> {t('allAnimals')}</Link>
+      {error && <p role="alert" className="border-s-[3px] border-[#be123c] py-3 px-4 mb-6 text-[#a52940] bg-[#fff1f2] rounded-lg wrap-anywhere dark:bg-[#411b29] dark:text-[#fecdd3]">{error}</p>}
+      <div className="grid grid-cols-[280px_minmax(0,_1fr)] gap-10 items-start max-lg:grid-cols-[230px_minmax(0,_1fr)] max-lg:gap-6 max-md:grid-cols-1 max-md:gap-7">
+        <aside className="min-w-0" aria-label={t('animalProfile')}>
+          <div className="max-md:flex max-md:items-center max-md:gap-5">
+            <button type="button" className="relative w-full aspect-[1.15] grid place-items-center bg-portrait rounded-portrait cursor-pointer
+              [&>span:first-child]:text-[76px] [&_img]:h-full [&_img]:w-full [&_img]:object-cover [&_img]:rounded-[inherit]
+              dark:bg-portrait-dark max-md:flex-[0_0_100px] max-md:w-25 max-md:h-28 max-md:rounded-[20px] max-md:aspect-auto
+              max-md:[&>span:first-child]:text-[48px]" onClick={() => avatarRef.current?.click()}
+              disabled={uploading} aria-label={t('changePhoto')}>
+              {pet.avatarUrl
+                ? <img src={pet.avatarUrl} alt={pet.name} />
+                : <span aria-hidden="true">{speciesEmoji[pet.species] || '🐾'}</span>}
+              <span className="absolute end-3 bottom-3 grid place-items-center w-11 h-11 rounded-full text-[#272335] bg-[#fffffff2]
+              text-[24px] shadow-[0_2px_10px_#00000010] max-md:w-7.5 max-md:h-7.5 max-md:bottom-[5px] max-md:end-[5px]
+              max-md:text-[20px]" aria-hidden="true">+</span>
+            </button>
+            <input ref={avatarRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-label={t('changePhoto')} onChange={handleAvatarUpload} />
+            <div className="mt-6 [&>p:first-child]:capitalize [&_h1]:text-[34px] [&_h1]:font-[650] [&_h1]:tracking-[-1px]
+              [&_h1]:leading-[1.2] [&_h1]:wrap-anywhere [&>p:last-child:not(:first-child)]:text-muted
+              [&>p:last-child:not(:first-child)]:mt-2 [&>p:last-child:not(:first-child)]:text-[15px]
+              [&>p:last-child:not(:first-child)]:wrap-anywhere max-md:mt-0 max-md:min-w-0 max-md:[&_h1]:text-[30px]">
+              <p className="text-muted text-[12px] font-medium mb-2">{t(pet.species)}</p>
+              <h1>{pet.name}</h1>
+              {pet.breed && <p>{pet.breed}</p>}
             </div>
           </div>
-          <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">{pet.name}</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm capitalize">
-              {recordText(language, pet.species)}{pet.breed ? ` · ${pet.breed}` : ''}
-            </p>
+          {uploading && <p role="status" className="text-muted text-[14px] mt-2.5">{t('saving')}</p>}
+          <dl className="[&_dt]:text-[12px] [&_dt]:text-muted grid grid-cols-3 gap-3 py-6 mt-6 border-y border-line [&_dd]:mt-1.5
+              [&_dd]:text-[14px] [&_dd]:font-semibold [&_dd]:wrap-anywhere max-md:mt-5 max-md:py-5">
+            {details.map(({ label, value }) => (
+              <div key={label}><dt>{t(label)}</dt><dd><bdi>{value}</bdi></dd></div>
+            ))}
+          </dl>
+          {pet.notes && <div className="py-6 border-b border-line [&_h2]:text-[12px] [&_h2]:font-medium [&_h2]:text-muted [&_h2]:mb-2 [&_p]:text-[14px]
+              [&_p]:leading-[1.7] [&_p]:whitespace-pre-wrap [&_p]:wrap-anywhere max-md:py-5"><h2>{t('notes')}</h2><p>{pet.notes}</p></div>}
+          <div className="flex flex-wrap gap-2.5 pt-6 [&>*]:flex-1 max-md:pt-5">
+            <Link to={`/pets/${id}/edit`} className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] text-ink disabled:opacity-[0.55] disabled:cursor-wait
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] glass">{t('editProfile')}</Link>
+            <button type="button" onClick={handleDelete} className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] disabled:opacity-[0.55] disabled:cursor-wait text-[#a52940] dark:text-[#fda4af]
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] glass">{t('deleteAnimal')}</button>
           </div>
-          <div className="flex gap-3 sm:gap-4 text-center shrink-0">
-            {pet.age && (
-              <div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Age</p>
-                <p className="font-semibold text-sm text-gray-900 dark:text-white">{pet.age}y</p>
+        </aside>
+        <div className="min-w-0">
+          <div className="hidden max-md:flex max-md:items-center max-md:justify-between max-md:gap-3 max-md:mb-4
+              max-md:[&_label]:text-[18px] max-md:[&_label]:font-semibold max-md:[&_select]:min-w-0
+              max-md:[&_select]:max-w-[70%] max-md:[&_select]:pe-7 max-md:[&_select]:text-[16px]">
+            <label htmlFor="record-section">{t('records')}</label>
+            <select id="record-section" className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
+              font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
+              duration-[160ms] ease-[ease] text-ink disabled:opacity-[0.55] disabled:cursor-wait
+              hover:bg-surface hover:shadow-[inset_0_1px_0_#ffffff55,0_5px_14px_#27233512] glass" value={activeTab} onChange={event => setActiveTab(event.target.value)}>
+              {visibleTabs.map(tab => <option key={tab} value={tab}>{t(tab)}</option>)}
+            </select>
+          </div>
+          <nav className="flex flex-wrap gap-1 p-1.5 mb-5 bg-surface border border-line rounded-card max-md:hidden" aria-label={t('records')}>
+            {visibleTabs.map(tab => (
+              <button type="button" key={tab} className="min-h-11 py-2.5 px-3.5 rounded-xl text-muted text-[13px] cursor-pointer transition-[background-color,color]
+              duration-[160ms] ease-[ease] aria-pressed:text-action aria-pressed:bg-[#ede9fe] aria-pressed:font-semibold
+              dark:aria-pressed:text-[#ddd6fe] dark:aria-pressed:bg-[#3b2c57] hover:aria-[pressed=false]:text-ink
+              hover:aria-[pressed=false]:bg-canvas"
+                aria-pressed={activeTab === tab} aria-controls="record-content" onClick={() => setActiveTab(tab)}>
+                {t(tab)}
+              </button>
+            ))}
+          </nav>
+          <div id="record-content" className="min-w-0 p-6.5 bg-surface border border-line rounded-panel max-lg:p-5 max-md:py-5 max-md:px-4
+              max-md:rounded-card max-md:[&_:is(button,input:not([type='checkbox']),select)]:min-h-11
+              max-md:[&_button]:min-w-11 max-md:[&_:is(input:not([type='checkbox']),textarea,select)]:text-[16px]" role="region" aria-label={t(activeTab)}>
+            {recordTab && (
+              <div lang={language} dir={language === 'ur' ? 'rtl' : 'ltr'}>
+                {activeTab === 'guide' && <SpeciesGuide key={id} pet={pet} language={language} />}
+                {activeTab === 'quality' && <RecordQuality key={id} petId={id} petName={pet.name} language={language} />}
+                {activeTab === 'dairy' && <DairyRecords key={id} petId={id} language={language} />}
               </div>
             )}
-            {pet.weight && (
-              <div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Weight</p>
-                <p className="font-semibold text-sm text-gray-900 dark:text-white">{pet.weight}kg</p>
-              </div>
-            )}
-            {pet.gender && (
-              <div>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Gender</p>
-                <p className="font-semibold text-sm text-gray-900 dark:text-white capitalize">{pet.gender}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {pet.notes && (
-          <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-xl p-3">
-            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mb-0.5">Notes</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{pet.notes}</p>
-          </div>
-        )}
-
-        {/* Edit and Delete Pet Button */}
-        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-          <Link to={`/pets/${id}/edit`}
-            className="text-sm text-violet-600 dark:text-violet-400 hover:underline">
-            Edit profile
-          </Link>
-          <button onClick={handleDelete}
-            className="text-sm text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-400 transition-colors">
-            Delete {pet.name}
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 overflow-x-auto">
-        {[...TABS, ...recordTabs].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`shrink-0 text-xs py-2 px-3 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === tab
-              ? 'bg-white dark:bg-gray-900 text-violet-700 dark:text-violet-400 shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}>
-            {recordText(language, tab)}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6">
-        {recordTab && (
-          <div lang={language} dir={language === 'ur' ? 'rtl' : 'ltr'} className="space-y-4">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-              {recordText(language, 'language')}
-              <select className="rounded border border-gray-300 bg-white p-1 dark:border-gray-600 dark:bg-gray-800" value={language} onChange={event => {
-                localStorage.setItem('record-language', event.target.value)
-                setLanguage(event.target.value)
-              }}>
-                <option value="en">English</option>
-                <option value="ur">اردو</option>
-              </select>
-            </label>
-            {activeTab === 'guide' && <SpeciesGuide key={id} pet={pet} language={language} />}
-            {activeTab === 'quality' && <RecordQuality key={id} petId={id} petName={pet.name} language={language} />}
-            {activeTab === 'dairy' && <DairyRecords key={id} petId={id} language={language} />}
-          </div>
-        )}
         {activeTab === 'Overview' && (
           <div className="flex flex-col gap-6">
             <MealLog petId={id} />
             <hr className="border-gray-100 dark:border-gray-800" />
             <WeightLog petId={id} />
             <hr className="border-gray-100 dark:border-gray-800" />
-            <WeightChart petId={id} petName={pet.name} />
+            <Suspense fallback={<p role="status" className="text-muted py-12 text-center">{t('load')}</p>}>
+              <WeightChart petId={id} petName={pet.name} />
+            </Suspense>
             <hr className="border-gray-100 dark:border-gray-800" />
             <VetVisits petId={id} />
             <hr className="border-gray-100 dark:border-gray-800" />
@@ -209,13 +180,20 @@ export default function PetDetail() {
         {activeTab === 'Meals' && <MealLog petId={id} />}
         {activeTab === 'Weight' && <WeightLog petId={id} />}
         {activeTab === 'Chart' && (
-          <WeightChart petId={id} petName={pet.name} />
+          <Suspense fallback={<p role="status" className="text-muted py-12 text-center">{t('load')}</p>}>
+              <WeightChart petId={id} petName={pet.name} />
+            </Suspense>
         )}
         {activeTab === 'Vet Visits' && <VetVisits petId={id} />}
         {activeTab === 'Reminders' && <Reminders petId={id} />}
-        {activeTab === 'AI Chat' && <Chat key={id} pet={pet} />}
+        {activeTab === 'AI Chat' && (
+          <Suspense fallback={<p role="status" className="text-muted py-12 text-center">{t('load')}</p>}>
+            <Chat key={id} pet={pet} />
+          </Suspense>
+        )}
         {activeTab === 'Photos' && <PhotoGallery petId={id} />}
-
+          </div>
+        </div>
       </div>
     </div>
   )
