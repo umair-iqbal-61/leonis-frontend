@@ -1,36 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useChat } from '../hooks/useChat'
 
-export default function Chat({ pet, recentMeals, recentWeight, recentVetVisits }) {
+export default function Chat({ pet }) {
   const [input, setInput] = useState('')
   const bottomRef = useRef(null)
 
-  const petContext = `
-    Pet Name: ${pet.name}
-    Species: ${pet.species}
-    Breed: ${pet.breed || 'Unknown'}
-    Age: ${pet.age ? `${pet.age} years` : 'Unknown'}
-    Weight: ${pet.weight ? `${pet.weight} kg` : 'Unknown'}
-    Gender: ${pet.gender || 'Unknown'}
-    Notes: ${pet.notes || 'None'}
-
-    Recent Meals (last 5):
-    ${recentMeals?.length
-    ? recentMeals.map(m => `- ${m.name}${m.amount ? ` (${m.amount})` : ''} on ${new Date(m.createdAt).toLocaleDateString()}`).join('\n')
-    : '- No meals logged yet'}
-
-    Weight History (last 3):
-    ${recentWeight?.length
-    ? recentWeight.map(w => `- ${w.weight}kg on ${new Date(w.createdAt).toLocaleDateString()}`).join('\n')
-    : '- No weight logs yet'}
-
-    Recent Vet Visits:
-    ${recentVetVisits?.length
-      ? recentVetVisits.map(v => `- ${v.reason} on ${new Date(v.visitDate).toLocaleDateString()}${v.nextVisit ? `, next visit: ${new Date(v.nextVisit).toLocaleDateString()}` : ''}`).join('\n')
-      : '- No vet visits logged yet'}
-  `.trim()
-
-  const { messages, loading, error, sendMessage, clearChat } = useChat(petContext)
+  const { messages, loading, error, sendMessage, clearChat } = useChat()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -56,7 +31,7 @@ export default function Chat({ pet, recentMeals, recentWeight, recentVetVisits }
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h3 className="font-semibold text-gray-800 dark:text-white">🤖 Ask PawPal AI</h3>
+          <h3 className="font-semibold text-gray-800 dark:text-white">🤖 Ask Leonis AI</h3>
           <p className="text-xs text-gray-400 dark:text-gray-500">Personalized advice for {pet.name}</p>
         </div>
         {messages.length > 0 && (
@@ -74,7 +49,7 @@ export default function Chat({ pet, recentMeals, recentWeight, recentVetVisits }
             <div className="text-4xl">🐾</div>
             <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
               Ask me anything about {pet.name}!<br />
-              I already know their profile and history.
+              I can use their saved records.
             </p>
             <div className="flex flex-col gap-2 w-full mt-2">
               {SUGGESTIONS.map(s => (

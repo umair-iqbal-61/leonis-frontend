@@ -1,3 +1,7 @@
+import SpeciesGuide from '../../components/tracking/SpeciesGuide'
+import DairyRecords from '../../components/tracking/DairyRecords'
+import RecordQuality from '../../components/tracking/RecordQuality'
+import { recordText } from '../../lib/recordLanguage'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
@@ -11,7 +15,7 @@ import { useRef } from 'react'
 import PhotoGallery from '../../components/tracking/PhotoGallery'
 import { apiFetch } from '../../lib/api'
 
-const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', other: '🐾' }
+const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', 'dairy-cattle': '🐄', other: '🐾' }
 const TABS = ['Overview', 'Meals', 'Weight', 'Chart', 'Vet Visits', 'Reminders', 'Photos', 'AI Chat']
 
 export default function PetDetail() {
@@ -21,7 +25,7 @@ export default function PetDetail() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
-  const [chatData, setChatData] = useState({ meals: [], weight: [], vets: [] })
+  const [language, setLanguage] = useState(() => localStorage.getItem('record-language') === 'ur' ? 'ur' : 'en')
   const avatarRef = useRef()
 
   const handleAvatarUpload = async (e) => {
@@ -46,18 +50,6 @@ export default function PetDetail() {
         setLoading(true)
         const { data } = await apiFetch(`/pets/${id}`, { method: "GET" })
         setPet(data)
-
-        const [meals, weights, vetVisits] = await Promise.all([
-          apiFetch(`/pets/${id}/meals`, { method: "GET" }),
-          apiFetch(`/pets/${id}/weights`, { method: "GET" }),
-          apiFetch(`/pets/${id}/vetvisits`, { method: "GET" })
-        ])
-
-        setChatData({
-          meals: (meals.data || []).slice(0, 5),
-          weight: (weights.data || []).slice(0, 3),
-          vets: (vetVisits.data || []).slice(0, 3)
-        })
 
         setLoading(false)
       } catch (error) {
@@ -90,6 +82,9 @@ export default function PetDetail() {
 
   if (!pet) return null
 
+  const recordTabs = ['quality', 'guide']
+  if (pet.species === 'dairy-cattle') recordTabs.push('dairy')
+  const recordTab = recordTabs.includes(activeTab)
   const emoji = SPECIES_EMOJI[pet.species] || '🐾'
 
   return (
@@ -119,7 +114,7 @@ export default function PetDetail() {
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">{pet.name}</h2>
             <p className="text-gray-500 dark:text-gray-400 text-sm capitalize">
-              {pet.species}{pet.breed ? ` · ${pet.breed}` : ''}
+              {recordText(language, pet.species)}{pet.breed ? ` · ${pet.breed}` : ''}
             </p>
           </div>
           <div className="flex gap-3 sm:gap-4 text-center shrink-0">
@@ -166,19 +161,36 @@ export default function PetDetail() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4 overflow-x-auto">
-        {TABS.map(tab => (
+        {[...TABS, ...recordTabs].map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`shrink-0 text-xs py-2 px-3 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === tab
               ? 'bg-white dark:bg-gray-900 text-violet-700 dark:text-violet-400 shadow-sm'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}>
-            {tab}
+            {recordText(language, tab)}
           </button>
         ))}
       </div>
 
       {/* Tab content */}
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm p-6">
+        {recordTab && (
+          <div lang={language} dir={language === 'ur' ? 'rtl' : 'ltr'} className="space-y-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+              {recordText(language, 'language')}
+              <select className="rounded border border-gray-300 bg-white p-1 dark:border-gray-600 dark:bg-gray-800" value={language} onChange={event => {
+                localStorage.setItem('record-language', event.target.value)
+                setLanguage(event.target.value)
+              }}>
+                <option value="en">English</option>
+                <option value="ur">اردو</option>
+              </select>
+            </label>
+            {activeTab === 'guide' && <SpeciesGuide pet={pet} language={language} />}
+            {activeTab === 'quality' && <RecordQuality key={id} petId={id} petName={pet.name} language={language} />}
+            {activeTab === 'dairy' && <DairyRecords key={id} petId={id} language={language} />}
+          </div>
+        )}
         {activeTab === 'Overview' && (
           <div className="flex flex-col gap-6">
             <MealLog petId={id} />
@@ -201,14 +213,7 @@ export default function PetDetail() {
         )}
         {activeTab === 'Vet Visits' && <VetVisits petId={id} />}
         {activeTab === 'Reminders' && <Reminders petId={id} />}
-        {activeTab === 'AI Chat' && (
-          <Chat
-            pet={pet}
-            recentMeals={chatData.meals}
-            recentWeight={chatData.weight}
-            recentVetVisits={chatData.vets}
-          />
-        )}
+        {activeTab === 'AI Chat' && <Chat key={id} pet={pet} />}
         {activeTab === 'Photos' && <PhotoGallery petId={id} />}
 
       </div>

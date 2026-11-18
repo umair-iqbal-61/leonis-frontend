@@ -1,0 +1,43 @@
+#record-quality-print {
+  display: none;
+}
+
+@media print {
+  body:has(> #record-quality-print) > :not(#record-quality-print) {
+    display: none !important;
+  }
+
+  #record-quality-print {
+    display: block;
+    margin: 0.25in;
+    color: #111827;
+    background: white;
+    font-size: 11pt;
+    overflow-wrap: anywhere;
+    color-scheme: light;
+  }
+
+  #record-quality-print header {
+    margin-block-end: 1rem;
+    break-after: avoid;
+  }
+
+  #record-quality-print h1 {
+    font-size: 20pt;
+    font-weight: 700;
+  }
+
+  #record-quality-print :is(dl, [data-report-finding]) {
+    break-inside: avoid;
+  }
+
+  #record-quality-print :is(p, dl, li, div) {
+    color: inherit;
+    background: transparent;
+    border-color: #d1d5db;
+  }
+
+  #record-quality-print [data-report-actions] {
+    display: none;
+  }
+}

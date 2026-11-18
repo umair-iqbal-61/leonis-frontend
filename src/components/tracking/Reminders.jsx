@@ -28,7 +28,22 @@ export default function Reminders({ petId }) {
     }
   }
 
-  useEffect(() => { fetchReminders() }, [petId])
+  useEffect(() => {
+    const controller = new AbortController()
+
+    apiFetch(`/pets/${petId}/reminders`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setReminders(data || [])
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [petId])
 
   const requestNotifPermission = async () => {
     const result = await Notification.requestPermission()

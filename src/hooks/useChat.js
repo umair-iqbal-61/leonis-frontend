@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { apiFetch } from '../lib/api'
 
-export function useChat(petContext) {
+export function useChat() {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -18,7 +18,7 @@ export function useChat(petContext) {
     try {
       const data = await apiFetch(`/pets/${petId}/chat`, {
         method: 'POST',
-        body: JSON.stringify({ messages: updatedMessages, petContext })
+        body: JSON.stringify({ messages: updatedMessages })
       })
 
       const reply = data.content?.[0]?.text

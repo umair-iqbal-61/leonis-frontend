@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 
-const SPECIES = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'other']
+const SPECIES = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'dairy-cattle', 'other']
 const GENDERS = ['male', 'female']
 
 export default function AddPet() {

@@ -23,7 +23,20 @@ export default function MealLog({ petId }) {
   }
 
   useEffect(() => {
-    fetchMeals()
+    const controller = new AbortController()
+
+    apiFetch(`/pets/${petId}/meals`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setMeals(data || [])
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
   }, [petId])
 
   const handleAdd = async (e) => {
@@ -107,10 +120,10 @@ export default function MealLog({ petId }) {
             <div key={log.id}
               className="flex justify-between items-start bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-3">
               <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-white">{log.name}</p>
+                <p className="text-sm font-medium text-gray-800 dark:text-white">{log.name}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500">
                   {log.amount && `${log.amount} · `}
-                      {new Date(log.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  {new Date(log.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                 </p>
                 {log.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{log.notes}</p>}
               </div>

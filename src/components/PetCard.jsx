@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', other: '🐾' }
+const SPECIES_EMOJI = { dog: '🐶', cat: '🐱', bird: '🐦', fish: '🐟', rabbit: '🐰', 'dairy-cattle': '🐄', other: '🐾' }
 
 export default function PetCard({ pet }) {
   const emoji = SPECIES_EMOJI[pet.species] || '🐾'
@@ -17,7 +17,7 @@ export default function PetCard({ pet }) {
           <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white truncate">{pet.name}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 capitalize truncate">
-              {pet.species}{pet.breed ? ` · ${pet.breed}` : ''}
+              {pet.species === 'dairy-cattle' ? 'Dairy cattle' : pet.species}{pet.breed ? ` · ${pet.breed}` : ''}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
               {pet.age ? `${pet.age} yrs old` : ''}

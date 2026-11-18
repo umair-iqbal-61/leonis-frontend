@@ -1,0 +1,67 @@
+const english = {
+  quality: 'Record quality', dairy: 'Dairy records', language: 'Language',
+  guide: 'Species guide', noGuide: 'No guide is available for this profile yet.',
+  load: 'Loading records…', error: 'Something went wrong. Please try again.',
+  check: 'Check records', download: 'Save as PDF', reportTitle: 'Record quality report', empty: 'No findings.',
+  active: 'Active', open: 'Open', reviewed: 'Reviewed', dismissed: 'Dismissed',
+  resolved: 'Resolved', cleared: 'Cleared', inactive: 'No longer detected',
+  completeness: 'Completeness', validity: 'Validity', consistency: 'Consistency',
+  uniqueness: 'Uniqueness', high: 'High', medium: 'Medium',
+  review: 'Mark reviewed', dismiss: 'Dismiss', resolve: 'Mark resolved', reopen: 'Reopen',
+  profile: 'Profile', weight: 'Weight', meal: 'Meal', vetVisit: 'Vet visit',
+  profileRequired: 'The profile is missing {field}.', milkRequired: 'Enter the recorded milk volume.',
+  weightPositive: 'Recorded weight ({value} kg) must be greater than zero.',
+  ageNonnegative: 'Recorded age ({value}) must be a nonnegative whole number.',
+  milkValid: 'Milk volume ({value} {unit}) must be nonnegative and measured in liters.',
+  dateValid: '{field} is invalid or in the future ({value}).',
+  visitOrder: 'Follow-up {next} is before the visit on {visit}.',
+  calvingOrder: 'Calving on {calving} precedes the only available breeding history, starting on {breeding}. Check the dates or add missing history.',
+  weightChange: 'Review {value} kg against this animal’s recent median of {baseline} kg.',
+  duplicate: 'These records from {date} look similar. Check whether both are needed.',
+  name: 'name', species: 'species', visitDate: 'Visit date', recordedOn: 'Record date',
+  missing: 'Missing', recordRemoved: 'Record removed', amount: 'Amount', reason: 'Reason',
+  vetName: 'Vet', nextVisit: 'Follow-up date', kind: 'Type', age: 'Age',
+  type: 'Record type', date: 'Date', liters: 'Volume (L)',
+  notes: 'Notes', add: 'Add record', save: 'Save changes', edit: 'Edit', remove: 'Delete',
+  cancel: 'Cancel', noDairy: 'No dairy records yet.', confirm: 'Delete this dairy record?',
+  MILK_YIELD: 'Milk yield', BREEDING: 'Breeding', CALVING: 'Calving',
+  'dairy-cattle': 'Dairy cattle',
+}
+
+const urdu = {
+  quality: 'ریکارڈ کا معیار', dairy: 'ڈیری کے ریکارڈ', language: 'زبان',
+  guide: 'جانور کی رہنمائی', noGuide: 'اس پروفائل کے لیے ابھی رہنمائی دستیاب نہیں۔',
+  load: 'ریکارڈ لوڈ ہو رہے ہیں…', error: 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔',
+  check: 'ریکارڈ چیک کریں', download: 'پی ڈی ایف محفوظ کریں', reportTitle: 'ریکارڈ کے معیار کی رپورٹ', empty: 'کوئی مسئلہ نہیں ملا۔',
+  active: 'موجودہ', open: 'زیر التوا', reviewed: 'جائزہ لیا گیا', dismissed: 'نظر انداز',
+  resolved: 'حل شدہ', cleared: 'دور شدہ', inactive: 'اب موجود نہیں',
+  completeness: 'مکملیت', validity: 'درستگی', consistency: 'مطابقت',
+  uniqueness: 'انفرادیت', high: 'زیادہ', medium: 'درمیانی',
+  review: 'جائزہ مکمل کریں', dismiss: 'نظر انداز کریں', resolve: 'حل شدہ قرار دیں', reopen: 'دوبارہ کھولیں',
+  profile: 'پروفائل', weight: 'وزن', meal: 'خوراک', vetVisit: 'معالج سے ملاقات',
+  profileRequired: 'پروفائل میں {field} موجود نہیں۔', milkRequired: 'دودھ کی درج شدہ مقدار لکھیں۔',
+  weightPositive: 'درج شدہ وزن ({value} کلوگرام) صفر سے زیادہ ہونا چاہیے۔',
+  ageNonnegative: 'درج شدہ عمر ({value}) صفر یا اس سے بڑا صحیح عدد ہونی چاہیے۔',
+  milkValid: 'دودھ کی مقدار ({value} {unit}) صفر یا اس سے زیادہ اور لیٹر میں ہونی چاہیے۔',
+  dateValid: '{field} غلط ہے یا مستقبل میں ہے ({value})۔',
+  visitOrder: 'اگلی ملاقات {next}، اصل ملاقات {visit} سے پہلے کی ہے۔',
+  calvingOrder: 'بچھڑے کی پیدائش {calving}، دستیاب افزائش کے پہلے ریکارڈ {breeding} سے پہلے کی ہے۔ تاریخیں دیکھیں یا گمشدہ ریکارڈ درج کریں۔',
+  weightChange: '{value} کلوگرام کا موازنہ اس جانور کے حالیہ درمیانی وزن {baseline} کلوگرام سے کریں۔',
+  duplicate: '{date} کے یہ ریکارڈ ایک جیسے لگتے ہیں۔ دیکھیں کہ دونوں کی ضرورت ہے یا نہیں۔',
+  name: 'نام', species: 'قسم', visitDate: 'ملاقات کی تاریخ', recordedOn: 'ریکارڈ کی تاریخ',
+  missing: 'موجود نہیں', recordRemoved: 'ریکارڈ حذف ہو چکا ہے', amount: 'مقدار', reason: 'وجہ',
+  vetName: 'معالج', nextVisit: 'اگلی ملاقات', kind: 'قسم', age: 'عمر',
+  type: 'ریکارڈ کی قسم', date: 'تاریخ', liters: 'مقدار (لیٹر)',
+  notes: 'نوٹس', add: 'ریکارڈ شامل کریں', save: 'تبدیلیاں محفوظ کریں', edit: 'ترمیم', remove: 'حذف کریں',
+  cancel: 'منسوخ کریں', noDairy: 'ابھی کوئی ڈیری ریکارڈ نہیں۔', confirm: 'کیا یہ ڈیری ریکارڈ حذف کرنا ہے؟',
+  MILK_YIELD: 'دودھ کی پیداوار', BREEDING: 'افزائش', CALVING: 'بچھڑے کی پیدائش',
+  'dairy-cattle': 'دودھ دینے والے مویشی',
+}
+
+export function recordText(language, key, parameters = {}) {
+  const words = language === 'ur' ? urdu : english
+  return (Object.hasOwn(words, key) ? words[key] : Object.hasOwn(english, key) ? english[key] : String(key)).replace(/\{(\w+)\}/g, (_, name) => {
+    const value = parameters[name] ?? ''
+    return name === 'field' ? (words[value] ?? value) : value
+  })
+}

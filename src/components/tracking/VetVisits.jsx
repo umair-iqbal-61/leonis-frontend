@@ -21,7 +21,22 @@ export default function VetVisits({ petId }) {
     }
   }
 
-  useEffect(() => { fetchVisits() }, [petId])
+  useEffect(() => {
+    const controller = new AbortController()
+
+    apiFetch(`/pets/${petId}/vetvisits`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setVisits(data || [])
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [petId])
 
   const handleAdd = async (e) => {
     e.preventDefault()

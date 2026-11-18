@@ -22,7 +22,22 @@ export default function PhotoGallery({ petId }) {
     }
   }
 
-  useEffect(() => { fetchPhotos() }, [petId])
+  useEffect(() => {
+    const controller = new AbortController()
+
+    apiFetch(`/pets/${petId}/photos`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setPhotos(data || [])
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [petId])
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0]

@@ -21,7 +21,22 @@ export default function WeightLog({ petId }) {
     }
   }
 
-  useEffect(() => { fetchLogs() }, [petId])
+  useEffect(() => {
+    const controller = new AbortController()
+
+    apiFetch(`/pets/${petId}/weights`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) setLogs(data || [])
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setError(error.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [petId])
 
   const handleAdd = async (e) => {
     e.preventDefault()
