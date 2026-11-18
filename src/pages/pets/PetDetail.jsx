@@ -186,7 +186,7 @@ export default function PetDetail() {
                 <option value="ur">اردو</option>
               </select>
             </label>
-            {activeTab === 'guide' && <SpeciesGuide pet={pet} language={language} />}
+            {activeTab === 'guide' && <SpeciesGuide key={id} pet={pet} language={language} />}
             {activeTab === 'quality' && <RecordQuality key={id} petId={id} petName={pet.name} language={language} />}
             {activeTab === 'dairy' && <DairyRecords key={id} petId={id} language={language} />}
           </div>

@@ -1,6 +1,9 @@
 const english = {
   session: 'Milking session', unknownSession: 'Unknown session',
   MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening',
+  guideScope: 'General record-keeping guidance for dogs, cats and dairy cattle. Vaccine timing depends on age, location and veterinary advice.',
+  weightHistoryMissing: 'A veterinary visit is saved, but Leonis has no profile weight or weight log. Add an available measurement or dismiss this finding if it does not apply.',
+  breedingHistoryMissing: 'A calving record is saved, but Leonis has no breeding history. Add available history or dismiss this finding if the dates are unknown.',
   quality: 'Record quality', dairy: 'Dairy records', language: 'Language',
   guide: 'Species guide', noGuide: 'No guide is available for this profile yet.',
   load: 'Loading records…', error: 'Something went wrong. Please try again.',
@@ -33,6 +36,9 @@ const english = {
 const urdu = {
   session: 'دودھ دوہنے کا وقت', unknownSession: 'وقت معلوم نہیں',
   MORNING: 'صبح', AFTERNOON: 'دوپہر', EVENING: 'شام',
+  guideScope: 'کتوں، بلیوں اور ڈیری مویشیوں کے ریکارڈ کے لیے عمومی رہنمائی۔ ویکسین کا وقت عمر، علاقے اور معالج کے مشورے پر منحصر ہے۔',
+  weightHistoryMissing: 'معالج سے ملاقات درج ہے مگر لیونس میں پروفائل یا وزن کے ریکارڈ میں پیمائش موجود نہیں۔ دستیاب وزن درج کریں یا غیر متعلق ہونے پر اس پیغام کو نظر انداز کریں۔',
+  breedingHistoryMissing: 'بچھڑے کی پیدائش درج ہے مگر لیونس میں افزائش کی تاریخ موجود نہیں۔ دستیاب تاریخ درج کریں یا تاریخیں معلوم نہ ہونے پر اس پیغام کو نظر انداز کریں۔',
   quality: 'ریکارڈ کا معیار', dairy: 'ڈیری کے ریکارڈ', language: 'زبان',
   guide: 'جانور کی رہنمائی', noGuide: 'اس پروفائل کے لیے ابھی رہنمائی دستیاب نہیں۔',
   load: 'ریکارڈ لوڈ ہو رہے ہیں…', error: 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔',

@@ -56,6 +56,11 @@ export default function RecordQuality({ petId, petName, language }) {
               {[t(item.dimension), t(item.severity), t(item.status.toLowerCase()), !item.active && t('inactive')].filter(Boolean).join(' · ')}
             </p>
             <p className="wrap-anywhere">{t(item.explanationKey, item.parameters)}</p>
+            {item.source && (
+              <p className="text-xs">
+                <a className="text-violet-700 underline dark:text-violet-300" href={item.source.url}>{item.source.title}</a>
+              </p>
+            )}
             <ul className="grid gap-2 text-xs sm:grid-cols-2">
               {item.records.map(record => (
                 <li key={`${record.type}-${record.id}`} className="rounded bg-gray-100 p-2 dark:bg-gray-800">
