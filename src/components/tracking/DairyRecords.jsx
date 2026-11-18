@@ -3,7 +3,7 @@ import { apiFetch } from '../../lib/api'
 import { recordText } from '../../lib/recordLanguage'
 
 const kinds = ['MILK_YIELD', 'BREEDING', 'CALVING']
-const empty = { kind: 'MILK_YIELD', recordedOn: '', liters: '', notes: '' }
+const empty = { kind: 'MILK_YIELD', recordedOn: '', liters: '', notes: '', session: '' }
 const fieldClass = 'w-full rounded-lg border border-gray-300 bg-white p-2 dark:border-gray-600 dark:bg-gray-800'
 
 export default function DairyRecords({ petId, language }) {
@@ -70,6 +70,13 @@ export default function DairyRecords({ petId, language }) {
         {form.kind === 'MILK_YIELD' && <label className="text-sm">{t('liters')}
           <input type="number" step="0.0001" className={fieldClass} value={form.liters} onChange={event => field('liters', event.target.value)} />
         </label>}
+        {form.kind === 'MILK_YIELD' && <label className="text-sm">{t('session')}
+          <select className={fieldClass} value={form.session} onChange={event => field('session', event.target.value)}>
+            {['', 'MORNING', 'AFTERNOON', 'EVENING'].map(session => (
+              <option key={session} value={session}>{t(session || 'unknownSession')}</option>
+            ))}
+          </select>
+        </label>}
         <label className="text-sm sm:col-span-2">{t('notes')}
           <textarea className={fieldClass} maxLength={2000} value={form.notes} onChange={event => field('notes', event.target.value)} />
         </label>
@@ -85,12 +92,13 @@ export default function DairyRecords({ petId, language }) {
           <li key={item.id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
             <div className="min-w-0">
               <p>{t(item.kind)} <bdi>#{item.id} · {item.recordedOn.slice(0, 10)}{item.liters != null && ` · ${item.liters} L`}</bdi></p>
+              {item.kind === 'MILK_YIELD' && <p>{t('session')} · {t(item.session || 'unknownSession')}</p>}
               {item.notes && <p className="wrap-anywhere">{item.notes}</p>}
             </div>
             <div className="flex gap-3">
               <button type="button" disabled={busy} onClick={() => {
                 setEditing(item.id)
-                setForm({ kind: item.kind, recordedOn: item.recordedOn.slice(0, 10), liters: item.liters ?? '', notes: item.notes ?? '' })
+                setForm({ kind: item.kind, recordedOn: item.recordedOn.slice(0, 10), liters: item.liters ?? '', session: item.session ?? '', notes: item.notes ?? '' })
               }}>{t('edit')}</button>
               <button type="button" disabled={busy} className="text-red-600 dark:text-red-400" onClick={() => {
                 if (window.confirm(t('confirm'))) write(item.id, 'DELETE')

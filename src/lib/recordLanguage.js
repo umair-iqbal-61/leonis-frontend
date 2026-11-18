@@ -1,4 +1,6 @@
 const english = {
+  session: 'Milking session', unknownSession: 'Unknown session',
+  MORNING: 'Morning', AFTERNOON: 'Afternoon', EVENING: 'Evening',
   quality: 'Record quality', dairy: 'Dairy records', language: 'Language',
   guide: 'Species guide', noGuide: 'No guide is available for this profile yet.',
   load: 'Loading records…', error: 'Something went wrong. Please try again.',
@@ -29,6 +31,8 @@ const english = {
 }
 
 const urdu = {
+  session: 'دودھ دوہنے کا وقت', unknownSession: 'وقت معلوم نہیں',
+  MORNING: 'صبح', AFTERNOON: 'دوپہر', EVENING: 'شام',
   quality: 'ریکارڈ کا معیار', dairy: 'ڈیری کے ریکارڈ', language: 'زبان',
   guide: 'جانور کی رہنمائی', noGuide: 'اس پروفائل کے لیے ابھی رہنمائی دستیاب نہیں۔',
   load: 'ریکارڈ لوڈ ہو رہے ہیں…', error: 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔',
