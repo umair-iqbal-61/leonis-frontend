@@ -4,15 +4,19 @@ import { useLanguage } from '../hooks/useLanguage'
 import { recordText } from '../lib/recordLanguage'
 import { marketText } from '../lib/marketplace'
 import { storeText } from '../lib/store'
+import { barnText } from '../lib/barn'
+import WorkspaceSwitcher from './WorkspaceSwitcher'
+import { useWorkspace } from '../hooks/useWorkspace'
 
 export default function AppHeader({ home = '/', children }) {
   const { language, setLanguage } = useLanguage()
+  const { activeWorkspace } = useWorkspace()
   const t = key => recordText(language, key)
   return (
     <header className="sticky top-0 z-20 border-b border-line glass-header">
       <nav className="flex items-center justify-between gap-3 max-w-300 mx-auto py-4 px-6 max-md:py-3 max-md:px-4 max-md:gap-2 max-[360px]:px-3" aria-label={t('mainNavigation')}>
         <Link to={home} className="inline-flex items-center gap-2.5 min-h-11 text-ink font-sans text-[29px] font-bold tracking-[-1.5px]
-              max-md:text-[25px] max-md:gap-[7px] [&:lang(ur)]:tracking-normal" dir="ltr" aria-label={t(home === '/dashboard' ? 'animalsHome' : 'brandHome')}>
+              max-md:text-[25px] max-md:gap-[7px] [&:lang(ur)]:tracking-normal" dir="ltr" aria-label={t(home !== '/' ? 'animalsHome' : 'brandHome')}>
           <span className="grid place-items-center w-9 h-9 rounded-xl text-[#fff] bg-action text-[27px] leading-[1] max-md:w-7.5
               max-md:h-7.5 max-md:rounded-[10px] max-md:text-[24px] max-[360px]:hidden" aria-hidden="true">✳</span>
           <span>leonis<span className="text-accent">.</span></span>
@@ -32,8 +36,9 @@ export default function AppHeader({ home = '/', children }) {
           {children}
         </div>
       </nav>
-      <div className="max-w-300 mx-auto flex flex-wrap gap-x-6 px-4 md:px-6 text-sm border-t border-line">
-        {home === '/dashboard' && <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/dashboard">{marketText(language, 'animals')}</Link>}
+      <div className="max-w-300 mx-auto flex flex-wrap gap-x-4 md:gap-x-6 px-4 md:px-6 text-sm border-t border-line">
+        {home !== '/' && <WorkspaceSwitcher />}
+        {home !== '/' && activeWorkspace === 'LIVESTOCK' && <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/barns">{barnText(language, 'barns')}</Link>}
         <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/marketplace">{marketText(language, 'marketplace')}</Link>
         <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/store">{storeText(language, 'store')}</Link>
       </div>

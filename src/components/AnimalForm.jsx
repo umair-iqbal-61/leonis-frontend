@@ -3,7 +3,7 @@ import { recordText } from '../lib/recordLanguage'
 
 const species = ['dog', 'cat', 'bird', 'fish', 'rabbit', 'dairy-cattle', 'other']
 
-export default function AnimalForm({ form, setForm, onSubmit, busy, onCancel }) {
+export default function AnimalForm({ form, setForm, onSubmit, busy, onCancel, allowedSpecies = species }) {
   const { language } = useLanguage()
   const t = key => recordText(language, key)
   const update = field => event => setForm(current => ({ ...current, [field]: event.target.value }))
@@ -25,8 +25,8 @@ export default function AnimalForm({ form, setForm, onSubmit, busy, onCancel }) 
       <div className="grid grid-cols-2 gap-5 max-md:grid-cols-1 max-md:gap-4.5">
         <label><span>{t('species')} <span aria-hidden="true">*</span></span>
           <select value={form.species} onChange={update('species')} required>
-            {!species.includes(form.species) && <option value={form.species}>{form.species}</option>}
-            {species.map(value => <option key={value} value={value}>{t(value)}</option>)}
+            {!allowedSpecies.includes(form.species) && <option value={form.species}>{form.species}</option>}
+            {allowedSpecies.map(value => <option key={value} value={value}>{t(value)}</option>)}
           </select>
         </label>
         <label>{t('gender')}

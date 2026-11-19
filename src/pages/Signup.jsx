@@ -4,6 +4,7 @@ import { recordText } from '../lib/recordLanguage'
 import { useState } from 'react'
 import { apiFetch } from '../lib/api'
 import { Link } from 'react-router-dom'
+import { workspaceText } from '../lib/workspace'
 
 
 export default function Signup({ setSession }) {
@@ -11,6 +12,7 @@ export default function Signup({ setSession }) {
   const t = key => recordText(language, key)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [workspace, setWorkspace] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -23,7 +25,8 @@ export default function Signup({ setSession }) {
         method: 'POST',
         body: JSON.stringify({
           username,
-          password
+          password,
+          workspace
         })
       })
 
@@ -31,7 +34,7 @@ export default function Signup({ setSession }) {
       setSession(token)
       setLoading(false)
     } catch (error) {
-      setError(error.message)
+      setError(error.message === 'INVALID_WORKSPACE' ? workspaceText(language, 'INVALID_WORKSPACE') : error.message)
       setLoading(false)
     }
   }
@@ -64,6 +67,13 @@ export default function Signup({ setSession }) {
               onChange={event => setPassword(event.target.value)} required minLength={6} />
           </label>
           <p className="text-muted text-[13px] leading-[1.7]">{t('passwordHint')}</p>
+          <label>{workspaceText(language, 'choose')}
+            <select value={workspace} onChange={event => setWorkspace(event.target.value)} required disabled={loading}>
+              <option value="">{workspaceText(language, 'placeholder')}</option>
+              {['PETS', 'LIVESTOCK', 'BOTH'].map(value => <option key={value} value={value}>{workspaceText(language, value)}</option>)}
+            </select>
+          </label>
+          <p className="text-muted text-[13px] leading-[1.7]">{workspaceText(language, 'chooseHint')}</p>
           <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 min-w-11 min-h-11 py-2.5 px-[17px] rounded-control text-[14px]
               font-semibold leading-[1.4] cursor-pointer transition-[background-color,border-color,box-shadow,transform]
               duration-[160ms] ease-[ease] bg-action text-white border border-action shadow-[0_4px_10px_#6d28d91a]

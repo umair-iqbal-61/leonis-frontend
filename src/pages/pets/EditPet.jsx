@@ -4,6 +4,7 @@ import { recordText } from '../../lib/recordLanguage'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
+import { petSpecies, livestockSpecies } from '../../lib/workspace'
 
 export default function EditPet() {
   const { id } = useParams()
@@ -77,7 +78,7 @@ export default function EditPet() {
               max-[360px]:flex-col"><h1>{t('editProfile')}</h1></div>
       {error && <p role="alert" className="border-s-[3px] border-[#be123c] py-3 px-4 mb-6 text-[#a52940] bg-[#fff1f2] rounded-lg wrap-anywhere dark:bg-[#411b29] dark:text-[#fecdd3]">{error}</p>}
       <AnimalForm form={form} setForm={setForm} onSubmit={handleSubmit} busy={saving}
-        onCancel={() => navigate('/pets/' + id)} />
+        onCancel={() => navigate('/pets/' + id)} allowedSpecies={form.species === 'dairy-cattle' ? livestockSpecies : petSpecies} />
     </div>
   )
 }

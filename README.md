@@ -165,3 +165,11 @@ The store at `/store` supports a species/category-filtered catalogue, a browser-
 - Cash on delivery is the only payment method. There are no online payments, seller onboarding, automated payouts or commissions.
 
 Use the backend's `scripts/storeAdmin.js` command to grant access to an existing account. A normal signup never receives admin rights. The intended initial admin is `umairiqbal`; it is not automatically promoted by username.
+
+## Barn dashboard
+
+Signed-in users can open `/barns` to create multiple barns, assign/transfer existing dairy cattle, record milk and animal sales, costs and actual payments, and print date-range reports in English or Urdu. Transfers preserve financial history. Reports distinguish recorded operating margins, shared costs and cash movement; missing figures remain unknown. The backend's additive barn migration must be applied first. Refer to its `docs/barn-dashboard.md` and `REFERENCES.md` for calculations, limitations and sources.
+
+## Pets and Livestock workspaces
+
+New users choose Pets, Livestock, or both during signup. Use the header Workspace dropdown to switch enabled workspaces or choose Manage workspaces to change preferences. Pets opens `/pets` and shows pet-care profiles; Livestock opens `/livestock` with cattle profiles and Barns. Marketplace and Store remain shared. Existing animal record URLs and IDs are preserved. The backend workspace migration must be applied before starting this version; see its `docs/workspaces.md` for existing-account backfill rules.

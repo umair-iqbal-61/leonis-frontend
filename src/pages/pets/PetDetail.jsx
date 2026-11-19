@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiFetch } from '../../lib/api'
 import { recordText } from '../../lib/recordLanguage'
+import { workspaceText } from '../../lib/workspace'
 import { useLanguage } from '../../hooks/useLanguage'
 import SpeciesGuide from '../../components/tracking/SpeciesGuide'
 import DairyRecords from '../../components/tracking/DairyRecords'
@@ -80,7 +81,7 @@ export default function PetDetail() {
 
   return (
     <div className="animate-workspace-enter motion-reduce:animate-none">
-      <Link to="/dashboard" className="inline-flex items-center gap-2.5 min-h-11 mb-6 text-muted text-[14px] max-md:mb-4"><span aria-hidden="true">{language === 'ur' ? '→' : '←'}</span> {t('allAnimals')}</Link>
+      <Link to={pet.species === 'dairy-cattle' ? '/livestock' : '/pets'} className="inline-flex items-center gap-2.5 min-h-11 mb-6 text-muted text-[14px] max-md:mb-4"><span aria-hidden="true">{language === 'ur' ? '→' : '←'}</span> {workspaceText(language, pet.species === 'dairy-cattle' ? 'backCattle' : 'backPets')}</Link>
       {error && <p role="alert" className="border-s-[3px] border-[#be123c] py-3 px-4 mb-6 text-[#a52940] bg-[#fff1f2] rounded-lg wrap-anywhere dark:bg-[#411b29] dark:text-[#fecdd3]">{error}</p>}
       <div className="grid grid-cols-[280px_minmax(0,_1fr)] gap-10 items-start max-lg:grid-cols-[230px_minmax(0,_1fr)] max-lg:gap-6 max-md:grid-cols-1 max-md:gap-7">
         <aside className="min-w-0" aria-label={t('animalProfile')}>

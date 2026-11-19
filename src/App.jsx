@@ -24,6 +24,11 @@ import OrderDetail from './pages/store/OrderDetail'
 import AdminProducts from './pages/store/AdminProducts'
 import ProductEditor from './pages/store/ProductEditor'
 import StoreSettings from './pages/store/StoreSettings'
+import BarnList from './pages/barns/BarnList'
+import BarnDetail from './pages/barns/BarnDetail'
+import WorkspaceProvider from './components/WorkspaceProvider'
+import WorkspaceGate from './components/WorkspaceGate'
+import Workspaces from './pages/Workspaces'
 
 export default function App() {
   useReminders()
@@ -35,11 +40,17 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <WorkspaceProvider session={session}><BrowserRouter>
       <Routes>
         <Route path="/" element={!session ? <Landing /> : <Navigate to="/dashboard" />} />
         <Route path="/login" element={!session ? <Login setSession={setSession} /> : <Navigate to="/dashboard" />} />
         <Route path="/signup" element={!session ? <Signup setSession={setSession} /> : <Navigate to="/dashboard" />} />
+        <Route path="/workspaces" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><Workspaces /></Dashboard></ProtectedRoute>} />
+        <Route path="/pets" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate required="PETS"><PetList workspace="PETS" /></WorkspaceGate></Dashboard></ProtectedRoute>} />
+        <Route path="/livestock" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate required="LIVESTOCK"><PetList workspace="LIVESTOCK" /></WorkspaceGate></Dashboard></ProtectedRoute>} />
+        <Route path="/livestock/add" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate required="LIVESTOCK"><AddPet key="add-cattle" workspace="LIVESTOCK" /></WorkspaceGate></Dashboard></ProtectedRoute>} />
+        <Route path="/barns" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate required="LIVESTOCK"><BarnList /></WorkspaceGate></Dashboard></ProtectedRoute>} />
+        <Route path="/barns/:id" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate required="LIVESTOCK"><BarnDetail /></WorkspaceGate></Dashboard></ProtectedRoute>} />
         <Route path="/store" element={store(<Catalogue />)} />
         <Route path="/store/products/:id" element={store(<ProductDetail />)} />
         <Route path="/store/cart" element={store(<Cart session={session} />)} />
@@ -56,12 +67,12 @@ export default function App() {
         <Route path="/marketplace/new" element={<ProtectedRoute session={session}><MarketplaceLayout session={session} setSession={setSession}><ListingEditor key="new" /></MarketplaceLayout></ProtectedRoute>} />
         <Route path="/marketplace/mine/:id" element={<ProtectedRoute session={session}><MarketplaceLayout session={session} setSession={setSession}><ListingEditor /></MarketplaceLayout></ProtectedRoute>} />
         <Route path="/marketplace/:id" element={<MarketplaceLayout session={session} setSession={setSession}><ListingDetail /></MarketplaceLayout>} />
-        <Route path="/dashboard" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><PetList /></Dashboard></ProtectedRoute>} />
-        <Route path="/pets/add" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><AddPet /></Dashboard></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate home /></Dashboard></ProtectedRoute>} />
+        <Route path="/pets/add" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><WorkspaceGate required="PETS"><AddPet key="add-pet" workspace="PETS" /></WorkspaceGate></Dashboard></ProtectedRoute>} />
         <Route path="/pets/:id" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><PetDetail /></Dashboard></ProtectedRoute>} />
         <Route path="/pets/:id/edit" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><EditPet /></Dashboard></ProtectedRoute>} />
         <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter></WorkspaceProvider>
   )
 }

@@ -28,6 +28,7 @@ weight, and reload to verify persistence. Use the `localhost` origin for CORS.
 
 ## Guardrails
 
+- Keep `REFERENCES.md` updated for frontend research and assets; shared livestock/financial sources belong in `../leonis-backend/REFERENCES.md`. Record dates, topic, source links, use and limitations without inventing past verification.
 - Work on a dedicated branch. Ask before modifying `main`.
 - Never read, create, or edit `.env` files or expose secrets. Treat `VITE_*` values as public.
 - `npm ci` installs existing locked dependencies. Ask before adding or upgrading dependencies.
