@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 import DarkModeToggle from './DarkModeToggle'
 import { useLanguage } from '../hooks/useLanguage'
 import { recordText } from '../lib/recordLanguage'
+import { marketText } from '../lib/marketplace'
+import { storeText } from '../lib/store'
 
 export default function AppHeader({ home = '/', children }) {
   const { language, setLanguage } = useLanguage()
@@ -30,6 +32,11 @@ export default function AppHeader({ home = '/', children }) {
           {children}
         </div>
       </nav>
+      <div className="max-w-300 mx-auto flex flex-wrap gap-x-6 px-4 md:px-6 text-sm border-t border-line">
+        {home === '/dashboard' && <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/dashboard">{marketText(language, 'animals')}</Link>}
+        <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/marketplace">{marketText(language, 'marketplace')}</Link>
+        <Link className="min-h-11 inline-flex items-center text-muted hover:text-accent" to="/store">{storeText(language, 'store')}</Link>
+      </div>
     </header>
   )
 }

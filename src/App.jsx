@@ -10,11 +10,29 @@ import { useReminders } from './hooks/useReminders'
 import Landing from './pages/Landing'
 import EditPet from './pages/pets/EditPet'
 import Dashboard from './pages/Dashboard'
+import MarketplaceLayout from './components/MarketplaceLayout'
+import Marketplace from './pages/marketplace/Marketplace'
+import ListingDetail from './pages/marketplace/ListingDetail'
+import ListingEditor from './pages/marketplace/ListingEditor'
+import StoreLayout from './components/StoreLayout'
+import StoreAdminLayout from './components/StoreAdminLayout'
+import Catalogue from './pages/store/Catalogue'
+import ProductDetail from './pages/store/ProductDetail'
+import Cart from './pages/store/Cart'
+import Orders from './pages/store/Orders'
+import OrderDetail from './pages/store/OrderDetail'
+import AdminProducts from './pages/store/AdminProducts'
+import ProductEditor from './pages/store/ProductEditor'
+import StoreSettings from './pages/store/StoreSettings'
 
 export default function App() {
   useReminders()
 
   const [session, setSession] = useState(() => !!localStorage.getItem('token'))
+  const store = (content, protectedRoute = false, admin = false) => {
+    const view = <StoreLayout session={session} setSession={setSession}>{admin ? <StoreAdminLayout>{content}</StoreAdminLayout> : content}</StoreLayout>
+    return protectedRoute ? <ProtectedRoute session={session}>{view}</ProtectedRoute> : view
+  }
 
   return (
     <BrowserRouter>
@@ -22,6 +40,22 @@ export default function App() {
         <Route path="/" element={!session ? <Landing /> : <Navigate to="/dashboard" />} />
         <Route path="/login" element={!session ? <Login setSession={setSession} /> : <Navigate to="/dashboard" />} />
         <Route path="/signup" element={!session ? <Signup setSession={setSession} /> : <Navigate to="/dashboard" />} />
+        <Route path="/store" element={store(<Catalogue />)} />
+        <Route path="/store/products/:id" element={store(<ProductDetail />)} />
+        <Route path="/store/cart" element={store(<Cart session={session} />)} />
+        <Route path="/store/orders" element={store(<Orders />, true)} />
+        <Route path="/store/orders/:id" element={store(<OrderDetail />, true)} />
+        <Route path="/store/admin" element={store(<AdminProducts />, true, true)} />
+        <Route path="/store/admin/settings" element={store(<StoreSettings />, true, true)} />
+        <Route path="/store/admin/products/new" element={store(<ProductEditor key="new-product" />, true, true)} />
+        <Route path="/store/admin/products/:id" element={store(<ProductEditor />, true, true)} />
+        <Route path="/store/admin/orders" element={store(<Orders key="admin-orders" admin />, true, true)} />
+        <Route path="/store/admin/orders/:id" element={store(<OrderDetail key="admin-order" admin />, true, true)} />
+        <Route path="/marketplace" element={<MarketplaceLayout session={session} setSession={setSession}><Marketplace key="browse" /></MarketplaceLayout>} />
+        <Route path="/marketplace/mine" element={<ProtectedRoute session={session}><MarketplaceLayout session={session} setSession={setSession}><Marketplace key="mine" owner /></MarketplaceLayout></ProtectedRoute>} />
+        <Route path="/marketplace/new" element={<ProtectedRoute session={session}><MarketplaceLayout session={session} setSession={setSession}><ListingEditor key="new" /></MarketplaceLayout></ProtectedRoute>} />
+        <Route path="/marketplace/mine/:id" element={<ProtectedRoute session={session}><MarketplaceLayout session={session} setSession={setSession}><ListingEditor /></MarketplaceLayout></ProtectedRoute>} />
+        <Route path="/marketplace/:id" element={<MarketplaceLayout session={session} setSession={setSession}><ListingDetail /></MarketplaceLayout>} />
         <Route path="/dashboard" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><PetList /></Dashboard></ProtectedRoute>} />
         <Route path="/pets/add" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><AddPet /></Dashboard></ProtectedRoute>} />
         <Route path="/pets/:id" element={<ProtectedRoute session={session}><Dashboard setSession={setSession}><PetDetail /></Dashboard></ProtectedRoute>} />

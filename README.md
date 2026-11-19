@@ -81,24 +81,24 @@ This repo is the frontend only. All data lives behind the [leonis-backend](https
 
 ## Local Development
 
-**Prerequisites:** Node.js 18+, Git, a running instance of [leonis-backend](https://github.com/umair-iqbal-61/leonis-backend) (local or deployed)
+**Prerequisites:** Node.js 24, Git, a running instance of [leonis-backend](https://github.com/umair-iqbal-61/leonis-backend) (local or deployed)
 
 ```bash
 git clone https://github.com/umair-iqbal-61/leonis-frontend.git
 cd leonis-frontend
-npm install
+npm ci
 ```
 
 **Environment variables:**
 
 ```env
-VITE_API_URL=http://localhost:7461
+VITE_API_URL=http://localhost:7461/api
 ```
 
 Point this at your local backend, or the deployed one (`https://pawpal-backend-ekyt.onrender.com`).
 
 ```bash
-npm run dev
+VITE_API_URL=http://localhost:7461/api npm run dev -- --port 5173 --strictPort
 ```
 
 ---
@@ -141,3 +141,27 @@ Decoupling storage from the database provider kept the migration clean — Cloud
 ---
 
 Built by [Umair Iqbal](https://github.com/umair-iqbal-61) · BS Information Technology student
+
+
+## Marketplace listings
+
+Open `/marketplace` to browse published animal listings without signing in. Filter by species or city/area. Listing details offer both phone calls and WhatsApp, including a separate WhatsApp number when provided.
+
+Sign in and choose **My listings → Create listing**. Save a private draft, upload 1–5 listing photos (JPG/PNG/WebP, up to 5 MB each), then confirm publication of the details, photos and contact numbers. Photos are added specifically for the listing; private care records are never imported. Seller descriptions are unverified.
+
+Editing and saving a published listing returns it to draft until explicitly republished. Sellers can withdraw, mark sold, or delete a listing. Sold listings disappear from browsing and hide contact details on their detail page. This milestone does not include payments, orders, or messaging inside Leonis.
+
+Start the backend after applying the marketplace migration and generating its Prisma client. Use `VITE_API_URL=http://localhost:7461/api` when running or building this frontend.
+
+## Single-seller store
+
+The store at `/store` supports a species/category-filtered catalogue, a browser-persisted cart, and authenticated COD order requests throughout Pakistan. Product prices, stock and delivery totals are calculated by the backend. Products keep their individual parcel weights; combined cart weight over the configured limit, or any bulky product, requires a separate delivery quote.
+
+- Standard parcels: the buyer reviews the full COD total before submitting.
+- Heavy/bulky carts: delivery is initially unpriced. The owner sends a quote, and the buyer must explicitly accept the delivery charge and final total in **My orders** before the owner can confirm or ship it.
+- Store-admin pages: `/store/admin` (products/available stock/photos), `/store/admin/settings` (standard fee, weight limit and checkout switch), `/store/admin/orders` (quotes and fulfillment).
+- Delivery settings start **unset** and checkout starts **closed**. Configure actual courier-based rates before enabling it.
+- Pending requests reserve stock. Cancelling an eligible request restores it once. Review pending requests and cancel abandoned ones; this release has no automatic expiry or courier integration.
+- Cash on delivery is the only payment method. There are no online payments, seller onboarding, automated payouts or commissions.
+
+Use the backend's `scripts/storeAdmin.js` command to grant access to an existing account. A normal signup never receives admin rights. The intended initial admin is `umairiqbal`; it is not automatically promoted by username.
