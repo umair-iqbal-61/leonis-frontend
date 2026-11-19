@@ -35,7 +35,7 @@ Leonis (formerly PawPal) is a full-stack SaaS application that helps pet owners 
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite, React Router v6 |
+| Frontend | React 19, Vite 8, React Router 7 |
 | Styling | Tailwind CSS v4 |
 | Backend | Node.js, Express 5, Prisma 7 ([leonis-backend](https://github.com/umair-iqbal-61/leonis-backend)) |
 | Database | PostgreSQL via Neon |
@@ -95,11 +95,22 @@ npm ci
 VITE_API_URL=http://localhost:7461/api
 ```
 
-Point this at your local backend, or the deployed one (`https://pawpal-backend-ekyt.onrender.com`).
+Point this at your local backend, or the deployed API (`https://pawpal-backend-ekyt.onrender.com/api`). The `/api` suffix is required.
 
 ```bash
 VITE_API_URL=http://localhost:7461/api npm run dev -- --port 5173 --strictPort
 ```
+
+Before handing off changes:
+
+```bash
+npm run lint
+VITE_API_URL=http://localhost:7461/api npm run build
+```
+
+For the existing Vercel/Render hosting, see the backend's
+[v2 release guide](../leonis-backend/docs/deploy-v2.md). It includes Node 24,
+the production API base, migration ordering and checks before publication.
 
 ---
 

@@ -54,3 +54,14 @@ validated design system. See [AGENTS.md](AGENTS.md) for the current styling rule
 **Use:** signup choice, saved account preferences, workspace dropdown/settings, separate pet/cattle lists/forms, and conditional barn navigation with shared commerce.
 **Affected work:** [workspace strings](src/lib/workspace.js), [provider](src/components/WorkspaceProvider.jsx), [settings](src/pages/Workspaces.jsx), and [backend contract/backfill notes](../leonis-backend/docs/workspaces.md).
 **Limits:** navigation preferences are not permissions; disabling a workspace retains records and existing owner-scoped record links.
+
+## Existing-hosting release preparation
+
+**Researched:** 20 November 2026.
+**Issue:** configure v2 builds without changing the owner's Vercel/Render hosting.
+
+- [Vercel: supported Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions) supports the bounded `engines.node: 24.x` declaration in [package.json](package.json). Platform settings still need checking on the existing project.
+- [Vercel: Vite, environment variables and SPA deep links](https://vercel.com/docs/frameworks/frontend/vite) informs the build-variable and route-reload checks in the [release guide](../leonis-backend/docs/deploy-v2.md). The existing SPA rewrite is retained; production routes have not been re-tested in the cloud for this update.
+- The production API hostname comes from this repository's README, not authenticated hosting-dashboard inspection. `VITE_API_URL` is public and includes `/api`. Preview frontends require an explicit backend CORS allowlist entry.
+
+**Related work:** runtime metadata in package/lock files, README commands and the shared release guide. These sources describe platform behavior; they do not confirm live project settings or deployment success.
