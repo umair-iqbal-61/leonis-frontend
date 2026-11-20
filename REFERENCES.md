@@ -65,3 +65,14 @@ validated design system. See [AGENTS.md](AGENTS.md) for the current styling rule
 - The production API hostname comes from this repository's README, not authenticated hosting-dashboard inspection. `VITE_API_URL` is public and includes `/api`. Preview frontends require an explicit backend CORS allowlist entry.
 
 **Related work:** runtime metadata in package/lock files, README commands and the shared release guide. These sources describe platform behavior; they do not confirm live project settings or deployment success.
+
+## Authenticated Vercel release inspection
+
+**Checked:** 20 November 2026, after the owner authorized team access.
+
+- **Target:** team `umair-iqbal-projects` (`team_ccX4WP2OdLmzaYOWueANezns`), project `pawpal` (`prj_y5f5XOMdECDq48FmhFLTTElmGtdm`), connected to `umair-iqbal-61/leonis-frontend`.
+- **Direct evidence:** Vercel project/deployment APIs, [build settings](https://vercel.com/umair-iqbal-projects/pawpal/settings/build-and-deployment), and [production environment](https://vercel.com/umair-iqbal-projects/pawpal/settings/environments/production). Production tracks `main`, custom domains auto-assign, Node is `24.x`, framework is Vite and root directory is unset. Build/output/install overrides are disabled; detected defaults are in use.
+- **Current production:** deployment `dpl_2oUtCasqWLjmGRj19ND6fE1WxxJn`, commit `fab97adeafb6a2220430e626d1e0f67e44ac7db9`, with `pawpal.umairiqbal.tech` assigned. The deployment is READY.
+- **Public configuration:** the single `VITE_API_URL` entry targets Production and Preview and matches `https://pawpal-backend-ekyt.onrender.com/api`. Only this public value was retrieved; no secret was requested or copied to an environment file.
+- **Preview protection:** Vercel Authentication is enabled for deployments outside custom domains. A `version-two` push creates a protected preview while `main` continues serving production. Preview browser requests to the production API are outside its existing CORS allowlist, so this preview is for interface/build review; full API workflows were checked locally and require the controlled backend/frontend release.
+- **Limits:** inspection did not alter project settings or deploy production. Source/provider settings, not assumptions from an old README, determine the release targets. See the backend [release guide](../leonis-backend/docs/deploy-v2.md).
